@@ -1,7 +1,22 @@
 import app from "./app.js";
+import "dotenv/config";
+import pool from "./config/database.js";
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
-    console.log("ProjectHub API is running on port : ", PORT);
-})
+const startServer = async () => {
+	try {
+		await pool.query("SELECT NOW()");
+
+		console.log("PostgreSQL connected");
+
+		app.listen(PORT, () => {
+			console.log("ProjectHub API is running on port : ", PORT);
+		});
+	} catch (error) {
+        console.log("PostgreSQL connection FAILED !", error);
+        process.exit(1);
+    }
+};
+
+startServer();
