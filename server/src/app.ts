@@ -1,4 +1,5 @@
 import express from "express";
+import authRoutes from "./auth/auth.routes.js";
 
 const app = express();
 
@@ -9,5 +10,7 @@ app.get("/", (req, res) => {
         message: "ProjectHub API is running"
     })
 })
+
+app.use("/api/auth", authRoutes)
 
 export default app;
