@@ -406,3 +406,33 @@ export const resendVerificationController = async (req: Request, res: Response) 
 		message: "A new verification code has been generated"
 	});
 }
+
+export const logoutController = async (req: Request, res: Response) => {
+	const refreshToken = req.cookies.refresh_token;
+
+	if(refreshToken) {
+		const refreshTokenHash = hashSessionToken(refreshToken);
+
+		await pool.query(
+			`
+				UPDATE user_sessions
+				SET revoked_at = NOW()
+				WHERE refresh_token_hash = $1
+					AND revoked_at IS NULL
+			`,
+			[refreshTokenHash]
+		)
+	}
+
+	const options: CookieOptions = {
+		httpOnly: true,
+		secure: false,
+		sameSite: "lax"
+	}
+
+	res.clearCookie("refresh_token", options)
+
+	return res.status(200).json({
+		message: "Logged out successfully",
+	});
+}

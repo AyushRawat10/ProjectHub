@@ -6,6 +6,7 @@ import {
 	getMeController,
 	refreshAccessTokenController,
 	resendVerificationController,
+    logoutController,
 } from "./auth.controller.js";
 import { authenticate } from "./auth.middleware.js";
 
@@ -16,6 +17,7 @@ router.post("/login", loginController);
 router.post("/refresh", refreshAccessTokenController);
 router.post("/verify-email", verifyEmailController);
 router.post("/resend-verification", resendVerificationController);
+router.post("/logout", logoutController);
 
 // Protected routes ...
 router.get("/me", authenticate, getMeController);
