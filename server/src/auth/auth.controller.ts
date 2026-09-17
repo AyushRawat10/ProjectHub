@@ -9,6 +9,7 @@ import {
 	verifyRefreshToken,
 	generateVerificationCode
 } from "./auth.utils.js";
+import { sendVerificationEmail } from "../service/email.service.js";
 
 export const registerController = async (req: Request, res: Response) => {
 	const { name, email, password } = req.body as RegisterBody;
@@ -60,7 +61,7 @@ export const registerController = async (req: Request, res: Response) => {
 		[user.id, verificationCodeHash]
 	)
 
-	console.log(`Verification code for ${email}: ${verificationCode}`);
+	await sendVerificationEmail( email, verificationCode );
 	
 	return res.status(201).json({
 		message: "Registration successful. Please verify your email",
@@ -105,24 +106,46 @@ export const verifyEmailController = async (req: Request, res: Response) => {
 		})
 	}
 
-	const codeHash = hashSessionToken(code);
-
 	const codeResult = await pool.query(
 		`
-			SELECT id
+			SELECT id, code_hash, attempts
 			FROM email_verification_codes
 			WHERE user_id = $1
-				AND code_hash = $2
 				AND expires_at > NOW()
 			ORDER BY created_at DESC
 			LIMIT 1
 		`,
-		[user.id, codeHash]
-  	);
-
+		[user.id]
+	);
+	
 	if(codeResult.rows.length === 0) {
 		return res.status(400).json({
 			message: "Invalid or expired verification code"
+		})
+	}
+	
+	const verification = codeResult.rows[0];
+	
+	if(verification.attempts >= 5) {
+		return res.status(429).json({
+			message: "Too many attempts. Please request a new code."
+		})
+	}
+	
+	const codeHash = hashSessionToken(code);
+
+	if(codeHash !== verification.code_hash) {
+		await pool.query(
+			`
+				UPDATE email_verification_codes
+				SET attempts = attempts + 1
+				WHERE id = $1
+			`,
+			[verification.id]
+		)
+
+		return res.status(400).json({
+			message: "Invalid verification code"
 		})
 	}
 
@@ -377,9 +400,7 @@ export const resendVerificationController = async (req: Request, res: Response) 
 		[user.id, codeHash]
 	)
 
-	console.log(
-		`New verification code for ${email}: ${verificationCode}`
-	);
+	await sendVerificationEmail( email, verificationCode );
 
 	return res.status(200).json({
 		message: "A new verification code has been generated"
