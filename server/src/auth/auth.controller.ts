@@ -1,116 +1,387 @@
 import type { CookieOptions, Response, Request } from "express";
 import pool from "../config/database.js";
 import bcrypt from "bcrypt";
-import type { RegisterBody, LoginBody } from "./auth.types.js";
-import { generateSessionToken, hashSessionToken } from "./auth.utils.js";
+import type { RegisterBody, VerifyEmailBody, LoginBody } from "./auth.types.js";
+import {
+	generateAccessToken,
+	generateRefreshToken,
+	hashSessionToken,
+	verifyRefreshToken,
+	generateVerificationCode
+} from "./auth.utils.js";
 
-export const register = async (req: Request, res: Response) => {
-    const {name, email, password} = req.body as RegisterBody;
+export const registerController = async (req: Request, res: Response) => {
+	const { name, email, password } = req.body as RegisterBody;
 
-    if(!name || !email || !password) {
-        return res.status(400).json({
-            message: "Name, email and password are required"
-        })
-    }
+	if (!name || !email || !password) {
+		return res.status(400).json({
+			message: "Name, email and password are required",
+		});
+	}
 
-    if(password.length < 8) {
-        return res.status(400).json({
-            message: "Password must be at least 8 characters"
-        })
-    }
+	if (password.length < 8) {
+		return res.status(400).json({
+			message: "Password must be at least 8 characters",
+		});
+	}
 
-    const existingUser = await pool.query(
-        "SELECT id FROM users WHERE email = $1",
-        [email]
-    );
+	const existingUser = await pool.query(
+		"SELECT id FROM users WHERE email = $1",
+		[email]
+	);
 
-    if(existingUser.rows.length > 0) {
-        return res.status(409).json({
-            message: "Email is already registered"
-        });
-    }
+	if (existingUser.rows.length > 0) {
+		return res.status(409).json({
+			message: "Email is already registered",
+		});
+	}
 
-    const passwordHash = await bcrypt.hash(password, 12);
+	const passwordHash = await bcrypt.hash(password, 12);
 
-    const result = await pool.query(
-        `
-        INSERT INTO users (name, email, password_hash)
-        VALUES ($1, $2, $3)
-        RETURNING id, name, email, role, avatar_url, created_at
+	const result = await pool.query(
+		`
+        INSERT INTO users (name, email, password_hash, email_verified)
+        VALUES ($1, $2, $3, FALSE)
+        RETURNING id, name, email, role, avatar_url, email_verified, created_at
         `,
-        [name, email, passwordHash]
-    )
+		[name, email, passwordHash]
+	);
+	
+	const user = result.rows[0];
 
-    const user = result.rows[0];
+	const verificationCode = generateVerificationCode();
+	const verificationCodeHash = hashSessionToken(verificationCode);
 
-    return res.status(201).json({
-        message: "User registered successfully",
-        user
-    })
-}
+	await pool.query(
+		`
+			INSERT INTO email_verification_codes (user_id, code_hash, expires_at)
+			VALUES ($1, $2, NOW() + INTERVAL '10 minutes')
+		`,
+		[user.id, verificationCodeHash]
+	)
 
-export const login = async (req: Request, res: Response) => {
-    const {email, password} = req.body as LoginBody;
+	console.log(`Verification code for ${email}: ${verificationCode}`);
+	
+	return res.status(201).json({
+		message: "Registration successful. Please verify your email",
+		user: {
+			id: user.id,
+			name: user.name,
+			email: user.email,
+			email_verified: user.email_verified
+		}
+	});
+};
 
-    if(!email || !password) {
-        res.status(400).json({
-            message: "email and password are required"
-        })
-    }
+export const verifyEmailController = async (req: Request, res: Response) => {
+	const {email, code} = req.body as VerifyEmailBody;
 
-    const emailFinder = await pool.query(
-        `
-            SELECT id, name, email, password_hash, role, avatar_url
+	if(!email || !code) {
+		return res.status(400).json({
+			message: "Email and verification code are required"
+		})
+	}
+
+	const userResult = await pool.query(
+		`
+			SELECT id, email_verified
+			FROM users
+			WHERE email = $1
+		`,
+		[email]
+	)
+
+	if(userResult.rows.length === 0) {
+		return res.status(400).json({
+			message: "Invalid verification request"
+		})
+	}
+
+	const user = userResult.rows[0];
+
+	if(user.email_verified) {
+		return res.status(400).json({
+			message: "Email is already verified"
+		})
+	}
+
+	const codeHash = hashSessionToken(code);
+
+	const codeResult = await pool.query(
+		`
+			SELECT id
+			FROM email_verification_codes
+			WHERE user_id = $1
+				AND code_hash = $2
+				AND expires_at > NOW()
+			ORDER BY created_at DESC
+			LIMIT 1
+		`,
+		[user.id, codeHash]
+  	);
+
+	if(codeResult.rows.length === 0) {
+		return res.status(400).json({
+			message: "Invalid or expired verification code"
+		})
+	}
+
+	await pool.query(
+		`
+			UPDATE users
+			SET email_verified = TRUE,
+				updated_at = NOW()
+			WHERE id = $1
+		`,
+		[user.id]
+	);
+
+	await pool.query(
+		`
+			DELETE FROM email_verification_codes
+			WHERE user_id = $1
+		`,
+		[user.id]
+	)
+
+	return res.status(200).json({
+		message: "Email verified successfully"
+	})
+};
+
+export const loginController = async (req: Request, res: Response) => {
+	const { email, password } = req.body as LoginBody;
+
+	if (!email || !password) {
+		res.status(400).json({
+			message: "email and password are required",
+		});
+	}
+
+	const emailFinder = await pool.query(
+		`
+            SELECT id, name, email, password_hash, role, avatar_url, email_verified
             FROM users
             WHERE email = $1
         `,
-        [email]
-    );
+		[email]
+	);
 
-    if(emailFinder.rows.length === 0) {
-        return res.status(401).json({
-            message: "Invalid email or password"
-        });
-    }
+	if (emailFinder.rows.length === 0) {
+		return res.status(401).json({
+			message: "Invalid email or password",
+		});
+	}
 
-    const user = emailFinder.rows[0];
+	const user = emailFinder.rows[0];
 
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+	if (!user.email_verified) {
+		return res.status(403).json({
+			message: "Please verify your email before logging in"
+		});
+	}
 
-    if(!isPasswordValid) {
-        return res.status(401).json({
-            message: "Invalid email or password"
-        })
-    }
+	const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
-    const sessionToken = generateSessionToken();
-    const tokenHash = hashSessionToken(sessionToken);
+	if (!isPasswordValid) {
+		return res.status(401).json({
+			message: "Invalid email or password",
+		});
+	}
 
-    await pool.query(
-        `
-            INSERT INTO user_sessions (user_id, token_hash, expires_at)
+	const accessToken = generateAccessToken(user.id);
+	const refreshToken = generateRefreshToken(user.id);
+	const refreshTokenHash = hashSessionToken(refreshToken);
+
+	await pool.query(
+		`
+            INSERT INTO user_sessions (user_id, refresh_token_hash, expires_at)
             VALUES ($1, $2, NOW() + INTERVAL '7 days')
         `,
-        [user.id, tokenHash]
-    )
+		[user.id, refreshTokenHash]
+	);
 
-    const options: CookieOptions = {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    }
+	const options: CookieOptions = {
+		httpOnly: true,
+		secure: false,
+		sameSite: "lax",
+		maxAge: 7 * 24 * 60 * 60 * 1000,
+	};
 
-    res.cookie("session_token", sessionToken, options)
+	res.cookie("refresh_token", refreshToken, options);
 
-    return res.status(200).json({
-        message: "Login successful",
-        user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            avatar_url: user.avatar_url
-        }
-    })
+	return res.status(200).json({
+		message: "Login successful",
+		accessToken,
+		user: {
+			id: user.id,
+			name: user.name,
+			email: user.email,
+			role: user.role,
+			avatar_url: user.avatar_url,
+		},
+	});
+};
+
+export const getMeController = async (req: Request, res: Response) => {
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Unauthorized",
+		});
+	}
+
+	const result = await pool.query(
+		`
+            SELECT id, name, email, role, avatar_url, created_at
+            FROM users
+            WHERE id = $1
+        `,
+		[req.userId]
+	);
+
+	if (result.rows.length === 0) {
+		return res.status(404).json({
+			message: "User not found",
+		});
+	}
+
+	return res.status(200).json({
+		user: result.rows[0],
+	});
+};
+
+export const refreshAccessTokenController = async (req: Request, res: Response) => {
+	const refreshToken = req.cookies.refresh_token;
+
+	if (!refreshToken) {
+		return res.status(401).json({
+			message: "Refresh token required",
+		});
+	}
+
+	try {
+		const { userId } = verifyRefreshToken(refreshToken);
+
+		const oldRefreshTokenHash = hashSessionToken(refreshToken);
+
+		const result = await pool.query(
+			`
+            SELECT id 
+            FROM user_sessions
+            WHERE user_id = $1
+                AND refresh_token_hash = $2
+                AND expires_at > NOW()
+                AND revoked_at IS NULL
+            `,
+			[userId, oldRefreshTokenHash]
+		);
+
+		if (result.rows.length === 0) {
+			return res.status(401).json({
+				message: "Invalid or expired refresh token",
+			});
+		}
+
+		const sessionId = result.rows[0].id;
+
+		await pool.query(
+			`
+				UPDATE user_sessions
+				SET revoked_at = NOW()
+				WHERE id = $1
+			`,
+			[sessionId]
+		)
+
+		const accessToken = generateAccessToken(userId);
+		const newRefreshToken = generateRefreshToken(userId);
+		const newRefreshTokenHash = hashSessionToken(newRefreshToken);
+
+		await pool.query(
+			`
+				INSERT INTO user_sessions (user_id, refresh_token_hash, expires_at)	
+				VALUES ($1, $2, NOW() + INTERVAL '7 days')
+			`,
+			[userId, newRefreshTokenHash]
+		)
+
+		const options: CookieOptions = {
+			httpOnly: true,
+			secure: false,
+			sameSite: "lax",
+			maxAge: 7 * 24 * 60 * 60 * 1000
+		};
+
+		res.cookie("refresh_token", newRefreshToken, options)
+
+		return res.status(200).json({
+			accessToken,
+			message: "Generate new access token successfully"
+		});
+
+	} catch (error) {
+		return res.status(401).json({
+			message: "Invalid refresh token",
+		});
+	}
+};
+
+export const resendVerificationController = async (req: Request, res: Response) => {
+	const {email} = req.body as {email: string};
+
+	if(!email) {
+		return res.status(400).json({
+			message: "Email is required"
+		})
+	}
+
+	const userResult = await pool.query(
+		`
+			SELECT id, email_verified
+			FROM users
+			WHERE email = $1
+		`,
+		[email]
+	)
+
+	if(userResult.rows.length === 0) {
+		return res.status(400).json({
+			message: "Invalid verificaion request"
+		})
+	}
+
+	const user = userResult.rows[0];
+
+	if(user.email_verified) {
+		return res.status(400).json({
+			message: "Email is already verified"
+		})
+	}
+
+	const verificationCode = generateVerificationCode();
+	const codeHash = hashSessionToken(verificationCode);
+
+	await pool.query(
+		`
+			DELETE FROM email_verification_codes
+			WHERE user_id = $1
+		`,
+		[user.id]
+	);
+
+	await pool.query(
+		`
+			INSERT INTO email_verification_codes (user_id, code_hash, expires_at)
+			VALUES ($1, $2, NOW() + INTERVAL '10 minutes')
+		`,
+		[user.id, codeHash]
+	)
+
+	console.log(
+		`New verification code for ${email}: ${verificationCode}`
+	);
+
+	return res.status(200).json({
+		message: "A new verification code has been generated"
+	});
 }
