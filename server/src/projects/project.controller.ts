@@ -120,3 +120,33 @@ export const updateProjectController = async (req: Request, res: Response) => {
         project: result.rows[0]
     })
 }
+
+export const deleteProjectController = async (req: Request, res: Response) => {
+    if(!req.userId) {
+        return res.status(401).json({
+            message: "Authentication required"
+        })
+    }
+
+    const {id} = req.params;
+
+    const result = await pool.query(
+        `
+            DELETE FROM projects
+            WHERE id = $1
+                AND owner_id = $2
+            RETURNING id
+        `,
+        [id, req.userId]
+    )
+
+    if(result.rows.length === 0) {
+        return res.status(404).json({
+            message: "Project not found"
+        })
+    }
+
+    return res.status(200).json({
+        message: "Project deleted successfully"
+    })
+}
