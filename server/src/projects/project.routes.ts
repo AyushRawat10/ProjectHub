@@ -7,24 +7,13 @@ import {
 	getProjectById,
 	updateProjectController,
 } from "./project.controller.js";
-import {
-	addMemberController,
-	getAllProjectMembersController,
-	removeMemberController,
-} from "./project-member.controller.js";
 
 const router = Router();
 
-// Project functionality routing ...
 router.post("/", authenticate, createProjectController);
 router.get("/", authenticate, getMyAllProjectController);
 router.get("/:id", authenticate, getProjectById);
 router.patch("/:id", authenticate, updateProjectController);
 router.delete("/:id", authenticate, deleteProjectController);
-
-// Members functionality routing ...
-router.post("/:id/members", authenticate, addMemberController);
-router.get("/:id/members", authenticate, getAllProjectMembersController);
-router.delete("/:id/members/:userId", authenticate, removeMemberController);
 
 export default router;

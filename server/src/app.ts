@@ -2,6 +2,8 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import authRoutes from "./auth/auth.routes.js";
 import projectRoutes from "./projects/project.routes.js";
+import projectMemberRoutes from "./project-members/project-member.routes.js";
+import taskRoutes from "./tasks/task.routes.js"
 
 const app = express();
 
@@ -16,5 +18,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoutes)
 app.use("/api/projects", projectRoutes)
+app.use("/api/projects", projectMemberRoutes)
+app.use("/api/projects", taskRoutes)
 
 export default app;
