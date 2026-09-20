@@ -79,3 +79,57 @@ export const addMemberController = async (req: Request, res: Response) => {
     })
 }
 
+export const getAllProjectMembersController = async (req: Request, res: Response) => {
+    if(!req.userId) {
+        return res.status(401).json({
+            message: "Authentication required"
+        })
+    }
+
+    const {id: projectId} = req.params;
+    
+    const accessResult = await pool.query(
+        `
+            SELECT 1
+            FROM projects
+            WHERE id = $1
+                AND owner_id = $2
+
+            UNION
+
+            SELECT 1
+            FROM project_members
+            WHERE project_id = $1
+                AND user_id = $2
+        `,
+        [projectId, req.userId]
+    )
+
+    if(accessResult.rows.length === 0) {
+        return res.status(404).json({
+            message: "Project not found"
+        })
+    }
+
+    const result = await pool.query(
+        `
+            SELECT
+                u.id,
+                u.name,
+                u.email,
+                u.avatar_url,
+                pm.joined_at
+            FROM project_members pm
+            JOIN users u
+                ON u.id = pm.user_id
+            WHERE pm.project_id = $1
+            ORDER BY pm.joined_at ASC
+        `,
+        [projectId]
+    )
+
+    return res.status(200).json({
+        message: "List of all memebers",
+        members: result.rows
+    })
+}
