@@ -111,4 +111,67 @@ export const createTaskController = async (req: Request, res: Response) => {
 	});
 };
 
+export const getProjectTasksController = async (req: Request, res: Response) => {
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Authentication required",
+		});
+	}
 
+	const { id: projectId } = req.params;
+
+	const accessResult = await pool.query(
+		`
+            SELECT 1
+            FROM projects
+            WHERE id = $1
+                AND owner_id = $2
+
+            UNION
+
+            SELECT 1
+            FROM project_members
+            WHERE project_id = $1
+                AND user_id = $2
+        `,
+		[projectId, req.userId]
+	);
+
+	if (accessResult.rows.length === 0) {
+		return res.status(404).json({
+			message: "Project not found",
+		});
+	}
+
+	const result = await pool.query(
+		`
+            SELECT 
+                t.id,
+                t.project_id,
+                t.creator_id,
+                t.assignee_id,
+                t.title,
+                t.description,
+                t.status,
+                t.priority,
+                t.due_date,
+                t.created_at,
+                t.updated_at,
+                creator.name AS creator_name,
+                assignee.name AS assignee_name
+            FROM tasks t
+            JOIN users creator
+                ON creator.id = t.creator_id
+            LEFT JOIN users assignee
+                ON assignee.id = t.assignee_id
+            WHERE t.project_id = $1
+            ORDER BY t.created_at DESC
+        `,
+		[projectId]
+	);
+
+	return res.status(200).json({
+		message: "List of tasks",
+		tasks: result.rows,
+	});
+};
