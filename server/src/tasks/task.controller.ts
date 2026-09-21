@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { CreateTaskBody } from "./task.types.js";
+import type { CreateTaskBody, UpdateTaskBody } from "./task.types.js";
 import pool from "../config/database.js";
 
 export const createTaskController = async (req: Request, res: Response) => {
@@ -243,6 +243,119 @@ export const getTaskByIdController = async (req: Request, res: Response) => {
 
     return res.status(200).json({
         message: "Task retrieved successfully",
+        task: result.rows[0]
+    })
+}
+
+export const updateTaskController = async (req: Request, res: Response) => {
+    if(!req.userId) {
+        return res.status(401).json({
+            message: "Authentication required"
+        })
+    }
+
+    const { id: projectId, taskId } = req.params;
+
+    const {title, description, assigneeId, status, priority, dueDate} = req.body as UpdateTaskBody;
+
+    const accessResult = await pool.query(
+        `
+            SELECT 1
+            FROM projects
+            WHERE id = $1
+                AND owner_id = $2
+
+            UNION
+
+            SELECT 1
+            FROM project_members
+            WHERE project_id = $1
+                AND user_id = $2
+        `,
+        [projectId, req.userId]
+    )
+
+    if(accessResult.rows.length === 0) {
+        return res.status(404).json({
+            message: "Project not found"
+        })
+    }
+
+    const taskResult = await pool.query(
+        `
+            SELECT 1
+            FROM tasks
+            WHERE id = $1
+                AND project_id = $2
+        `, 
+        [taskId, projectId]
+    )
+
+    if(taskResult.rows.length === 0) {
+        return res.status(404).json({
+            message: "Task not found"
+        })
+    }
+
+    if(assigneeId) {
+        const memberResult = await pool.query(
+            `
+                SELECT 1
+                FROM project_members
+                WHERE project_id = $1
+                    AND user_id = $2
+            `,
+            [projectId, assigneeId]
+        )
+
+        if(memberResult.rows.length === 0) {
+            return res.status(400).json({
+                message: "Assignee must be a member of the project"
+            })
+        }
+    }
+
+    const result = await pool.query(
+        `
+            UPDATE tasks
+            SET 
+                title = COALESCE($1, title),
+                description = COALESCE($2, description),
+                assignee_id = COALESCE($3, assignee_id),
+                status = COALESCE($4, status)::task_status,
+                priority = COALESCE($5, priority)::task_priority,
+                due_date = COALESCE($6, due_date),
+                updated_at = NOW()
+            WHERE id = $7
+                AND project_id = $8
+
+            RETURNING
+                id, 
+                project_id,
+                creator_id,
+                assignee_id,
+                title,
+                description,
+                status,
+                priority,
+                due_date,
+                created_at,
+                updated_at
+        `,
+        [
+            title ?? null,
+            description ?? null,
+            assigneeId ?? null,
+            status ?? null,
+            priority ?? null,
+            dueDate ?? null,
+            taskId,
+            projectId
+        ]
+    )
+
+    return res.status(200).json({
+        message: "Task updated successfully",
         task: result.rows[0]
     })
 }

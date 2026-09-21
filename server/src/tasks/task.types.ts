@@ -6,3 +6,5 @@ export type CreateTaskBody = {
     priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
     dueDate?: string;
 }
+
+export type UpdateTaskBody = Partial<CreateTaskBody>;
