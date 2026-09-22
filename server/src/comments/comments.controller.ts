@@ -107,7 +107,6 @@ export const getTaskCommentsController = async (req: Request, res: Response) => 
         })
     }
 
-    console.log("projectId : ", taskResult.rows[0])
     const projectId = taskResult.rows[0].project_id;
 
     const accessResult = await pool.query(
@@ -207,6 +206,42 @@ export const updateCommentsController = async (req: Request, res: Response) => {
 
     return res.status(200).json({
         message: "Comment updated successfully",
+        comment: result.rows[0]
+    })
+}
+
+export const deleteCommentsController = async (req: Request, res: Response) => {
+    if(!req.userId) {
+        return res.status(401).json({
+            message: "Authentication required"
+        })
+    }
+
+    const {taskId, commentId} = req.params;
+
+    const result = await pool.query(
+        `
+            DELETE FROM comments
+            WHERE id = $1
+                AND task_id = $2
+                AND user_id = $3
+            RETURNING
+                id,
+                task_id,
+                user_id,
+                content
+        `,
+        [commentId, taskId, req.userId]
+    )
+
+    if(result.rows.length === 0) {
+        return res.status(404).json({
+            message: "Comment not found or you don't have permission to delete it"
+        })
+    }
+
+    return res.status(200).json({
+        message: "Comment deleted successfully",
         comment: result.rows[0]
     })
 }
