@@ -122,7 +122,7 @@ export const getProjectTasksController = async (
 	}
 
 	const { id: projectId } = req.params;
-	const { search } = req.query;
+	const { search, status, priority } = req.query;
     console.log(search)
 
     if(!projectId || Array.isArray(projectId)) {
@@ -155,7 +155,7 @@ export const getProjectTasksController = async (
 	}
 
 
-    const value: string[] = [projectId];
+    const values: string[] = [projectId];
 
 	let query = 
 		`
@@ -182,7 +182,7 @@ export const getProjectTasksController = async (
         `;
 
     if(typeof search === "string" && search.trim()) {
-        value.push(`%${search.trim()}%`)
+        values.push(`%${search.trim()}%`)
 
         query += `
             AND (
@@ -192,11 +192,27 @@ export const getProjectTasksController = async (
         `;
     }
 
+    if(typeof status === "string" && status.trim()) {
+        values.push(status);
+
+        query += `
+            AND t.status = $${values.length}::task_status
+        `;
+    }
+
+    if(typeof priority === "string" && priority.trim()) {
+        values.push(priority);
+
+        query += `
+            AND t.priority = $${values.length}::task_priority
+        `;
+    }
+
     query += `
         ORDER BY t.created_at DESC
     `;
 
-    const result = await pool.query(query, value);
+    const result = await pool.query(query, values);
 
 	return res.status(200).json({
 		message: "List of tasks",
