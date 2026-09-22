@@ -3,40 +3,40 @@ import pool from "../config/database.js";
 import type { CreateCommentBody, UpdateCommentBody } from "./comments.types.js";
 
 export const createCommentsController = async (req: Request, res: Response) => {
-    if(!req.userId) {
-        return res.status(401).json({
-            message: "Authentication required"
-        })
-    }
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Authentication required",
+		});
+	}
 
-    const {taskId} = req.params;
-    const {content} = req.body as CreateCommentBody;
+	const { taskId } = req.params;
+	const { content } = req.body as CreateCommentBody;
 
-    if(!content?.trim()) {
-        return res.status(400).json({
-            message: "Comment content is required"
-        })
-    }
+	if (!content?.trim()) {
+		return res.status(400).json({
+			message: "Comment content is required",
+		});
+	}
 
-    const taskResult = await pool.query(
-        `
+	const taskResult = await pool.query(
+		`
             SELECT project_id
             FROM tasks
             WHERE id = $1
         `,
-        [taskId]
-    )
+		[taskId]
+	);
 
-    if(taskResult.rows.length === 0) {
-        return res.status(404).json({
-            message: "Task not found"
-        })
-    }
+	if (taskResult.rows.length === 0) {
+		return res.status(404).json({
+			message: "Task not found",
+		});
+	}
 
-    const projectId = taskResult.rows[0].project_id;
+	const projectId = taskResult.rows[0].project_id;
 
-    const accessResult = await pool.query(
-        `
+	const accessResult = await pool.query(
+		`
             SELECT 1
             FROM projects
             WHERE id = $1
@@ -49,17 +49,17 @@ export const createCommentsController = async (req: Request, res: Response) => {
             WHERE project_id = $1
                 AND user_id = $2
         `,
-        [projectId, req.userId]
-    )
+		[projectId, req.userId]
+	);
 
-    if(accessResult.rows.length === 0) {
-        return res.status(404).json({
-            message: "Task not found"
-        })
-    }
+	if (accessResult.rows.length === 0) {
+		return res.status(404).json({
+			message: "Task not found",
+		});
+	}
 
-    const result = await pool.query(
-        `
+	const result = await pool.query(
+		`
             INSERT INTO comments (
                 task_id,
                 user_id,
@@ -74,43 +74,46 @@ export const createCommentsController = async (req: Request, res: Response) => {
                 created_at,
                 updated_at
         `,
-        [taskId, req.userId, content.trim()]
-    )
+		[taskId, req.userId, content.trim()]
+	);
 
-    return res.status(201).json({
-        message: "Comment created successfully",
-        comment: result.rows[0]
-    })
-}
+	return res.status(201).json({
+		message: "Comment created successfully",
+		comment: result.rows[0],
+	});
+};
 
-export const getTaskCommentsController = async (req: Request, res: Response) => {
-    if(!req.userId) {
-        return res.status(401).json({
-            message: "Authentication required"
-        })
-    }
+export const getTaskCommentsController = async (
+	req: Request,
+	res: Response
+) => {
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Authentication required",
+		});
+	}
 
-    const {taskId} = req.params;
-    
-    const taskResult = await pool.query(
-        `
+	const { taskId } = req.params;
+
+	const taskResult = await pool.query(
+		`
             SELECT project_id
             FROM tasks
             WHERE id = $1
         `,
-        [taskId]
-    )
+		[taskId]
+	);
 
-    if(taskResult.rows.length === 0) {
-        return res.status(404).json({
-            message: "Task not found"
-        })
-    }
+	if (taskResult.rows.length === 0) {
+		return res.status(404).json({
+			message: "Task not found",
+		});
+	}
 
-    const projectId = taskResult.rows[0].project_id;
+	const projectId = taskResult.rows[0].project_id;
 
-    const accessResult = await pool.query(
-        `
+	const accessResult = await pool.query(
+		`
             SELECT 1
             FROM projects
             WHERE id = $1
@@ -123,17 +126,17 @@ export const getTaskCommentsController = async (req: Request, res: Response) => 
             WHERE project_id = $1
                 AND user_id = $2
         `,
-        [projectId, req.userId]
-    )
+		[projectId, req.userId]
+	);
 
-    if(accessResult.rows.length === 0) {
-        return res.status(404).json({ 
-            message: "Task not found"
-        })
-    }
+	if (accessResult.rows.length === 0) {
+		return res.status(404).json({
+			message: "Task not found",
+		});
+	}
 
-    const result = await pool.query(
-        `
+	const result = await pool.query(
+		`
             SELECT
                 c.id,
                 c.task_id,
@@ -148,33 +151,33 @@ export const getTaskCommentsController = async (req: Request, res: Response) => 
             WHERE c.task_id = $1
             ORDER BY c.created_at ASC
         `,
-        [taskId]
-    )
+		[taskId]
+	);
 
-    return res.status(200).json({
-        message: "Comments retrieved successfully",
-        comments: result.rows,
-    })
-}
+	return res.status(200).json({
+		message: "Comments retrieved successfully",
+		comments: result.rows,
+	});
+};
 
 export const updateCommentsController = async (req: Request, res: Response) => {
-    if(!req.userId) {
-        return res.status(401).json({
-            message: "Authentication required"
-        })
-    }
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Authentication required",
+		});
+	}
 
-    const {taskId, commentId} = req.params;
-    const {content} = req.body as UpdateCommentBody;
+	const { taskId, commentId } = req.params;
+	const { content } = req.body as UpdateCommentBody;
 
-    if(!content?.trim()) {
-        return res.status(400).json({
-            message: "Comment content is required"
-        })
-    }
+	if (!content?.trim()) {
+		return res.status(400).json({
+			message: "Comment content is required",
+		});
+	}
 
-    const result = await pool.query(
-        `
+	const result = await pool.query(
+		`
             UPDATE comments
             SET
                 content = $1,
@@ -190,37 +193,33 @@ export const updateCommentsController = async (req: Request, res: Response) => {
                 created_at,
                 updated_at
         `,
-        [
-            content.trim(),
-            commentId,
-            taskId,
-            req.userId
-        ]
-    )
+		[content.trim(), commentId, taskId, req.userId]
+	);
 
-    if(result.rows.length === 0) {
-        return res.status(404).json({
-            message: "Comment not found or you don't have permission to edit it"
-        })
-    }
+	if (result.rows.length === 0) {
+		return res.status(404).json({
+			message:
+				"Comment not found or you don't have permission to edit it",
+		});
+	}
 
-    return res.status(200).json({
-        message: "Comment updated successfully",
-        comment: result.rows[0]
-    })
-}
+	return res.status(200).json({
+		message: "Comment updated successfully",
+		comment: result.rows[0],
+	});
+};
 
 export const deleteCommentsController = async (req: Request, res: Response) => {
-    if(!req.userId) {
-        return res.status(401).json({
-            message: "Authentication required"
-        })
-    }
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Authentication required",
+		});
+	}
 
-    const {taskId, commentId} = req.params;
+	const { taskId, commentId } = req.params;
 
-    const result = await pool.query(
-        `
+	const result = await pool.query(
+		`
             DELETE FROM comments
             WHERE id = $1
                 AND task_id = $2
@@ -231,17 +230,18 @@ export const deleteCommentsController = async (req: Request, res: Response) => {
                 user_id,
                 content
         `,
-        [commentId, taskId, req.userId]
-    )
+		[commentId, taskId, req.userId]
+	);
 
-    if(result.rows.length === 0) {
-        return res.status(404).json({
-            message: "Comment not found or you don't have permission to delete it"
-        })
-    }
+	if (result.rows.length === 0) {
+		return res.status(404).json({
+			message:
+				"Comment not found or you don't have permission to delete it",
+		});
+	}
 
-    return res.status(200).json({
-        message: "Comment deleted successfully",
-        comment: result.rows[0]
-    })
-}
+	return res.status(200).json({
+		message: "Comment deleted successfully",
+		comment: result.rows[0],
+	});
+};

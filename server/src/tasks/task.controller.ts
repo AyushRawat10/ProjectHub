@@ -111,7 +111,10 @@ export const createTaskController = async (req: Request, res: Response) => {
 	});
 };
 
-export const getProjectTasksController = async (req: Request, res: Response) => {
+export const getProjectTasksController = async (
+	req: Request,
+	res: Response
+) => {
 	if (!req.userId) {
 		return res.status(401).json({
 			message: "Authentication required",
@@ -119,6 +122,14 @@ export const getProjectTasksController = async (req: Request, res: Response) => 
 	}
 
 	const { id: projectId } = req.params;
+	const { search } = req.query;
+    console.log(search)
+
+    if(!projectId || Array.isArray(projectId)) {
+        return res.status(400).json({
+            message: "Invalid project ID"
+        })
+    }
 
 	const accessResult = await pool.query(
 		`
@@ -130,6 +141,88 @@ export const getProjectTasksController = async (req: Request, res: Response) => 
             UNION
 
             SELECT 1
+            FROM project_members
+            WHERE project_id = $1
+                AND user_id = $2
+        `,
+		[projectId, req.userId]
+	);
+
+	if (accessResult.rows.length === 0) {
+		return res.status(404).json({
+			message: "Project not found",
+		});
+	}
+
+
+    const value: string[] = [projectId];
+
+	let query = 
+		`
+            SELECT 
+                t.id,
+                t.project_id,
+                t.creator_id,
+                t.assignee_id,
+                t.title,
+                t.description,
+                t.status,
+                t.priority,
+                t.due_date,
+                t.created_at,
+                t.updated_at,
+                creator.name AS creator_name,
+                assignee.name AS assignee_name
+            FROM tasks t
+            JOIN users creator
+                ON creator.id = t.creator_id
+            LEFT JOIN users assignee
+                ON assignee.id = t.assignee_id
+            WHERE t.project_id = $1
+        `;
+
+    if(typeof search === "string" && search.trim()) {
+        value.push(`%${search.trim()}%`)
+
+        query += `
+            AND (
+                t.title ILIKE $2
+                OR t.description ILIKE $2
+            )
+        `;
+    }
+
+    query += `
+        ORDER BY t.created_at DESC
+    `;
+
+    const result = await pool.query(query, value);
+
+	return res.status(200).json({
+		message: "List of tasks",
+		tasks: result.rows,
+	});
+};
+
+export const getTaskByIdController = async (req: Request, res: Response) => {
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Authentication required",
+		});
+	}
+
+	const { id: projectId, taskId } = req.params;
+
+	const accessResult = await pool.query(
+		`
+            SELECT 1 
+            FROM projects
+            WHERE id = $1
+                AND owner_id = $2
+
+            UNION 
+
+            SELECT 1 
             FROM project_members
             WHERE project_id = $1
                 AND user_id = $2
@@ -164,102 +257,38 @@ export const getProjectTasksController = async (req: Request, res: Response) => 
                 ON creator.id = t.creator_id
             LEFT JOIN users assignee
                 ON assignee.id = t.assignee_id
-            WHERE t.project_id = $1
-            ORDER BY t.created_at DESC
-        `,
-		[projectId]
-	);
-
-	return res.status(200).json({
-		message: "List of tasks",
-		tasks: result.rows,
-	});
-};
-
-export const getTaskByIdController = async (req: Request, res: Response) => {
-    if(!req.userId) {
-        return res.status(401).json({
-            message: "Authentication required"
-        })
-    }
-
-    const {id: projectId, taskId} = req.params;
-
-    const accessResult = await pool.query(
-        `
-            SELECT 1 
-            FROM projects
-            WHERE id = $1
-                AND owner_id = $2
-
-            UNION 
-
-            SELECT 1 
-            FROM project_members
-            WHERE project_id = $1
-                AND user_id = $2
-        `,
-        [projectId, req.userId]
-    )
-
-    if(accessResult.rows.length === 0) {
-        return res.status(404).json({
-            message: "Project not found"
-        })
-    }
-
-    const result = await pool.query(
-        `
-            SELECT 
-                t.id,
-                t.project_id,
-                t.creator_id,
-                t.assignee_id,
-                t.title,
-                t.description,
-                t.status,
-                t.priority,
-                t.due_date,
-                t.created_at,
-                t.updated_at,
-                creator.name AS creator_name,
-                assignee.name AS assignee_name
-            FROM tasks t
-            JOIN users creator
-                ON creator.id = t.creator_id
-            LEFT JOIN users assignee
-                ON assignee.id = t.assignee_id
             WHERE t.id = $1
                 AND t.project_id = $2
         `,
-        [taskId, projectId]
-    )
+		[taskId, projectId]
+	);
 
-    if(result.rows.length === 0) {
-        return res.status(404).json({
-            message: "Task not found"
-        })
-    }
+	if (result.rows.length === 0) {
+		return res.status(404).json({
+			message: "Task not found",
+		});
+	}
 
-    return res.status(200).json({
-        message: "Task retrieved successfully",
-        task: result.rows[0]
-    })
-}
+	return res.status(200).json({
+		message: "Task retrieved successfully",
+		task: result.rows[0],
+	});
+};
 
 export const updateTaskController = async (req: Request, res: Response) => {
-    if(!req.userId) {
-        return res.status(401).json({
-            message: "Authentication required"
-        })
-    }
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Authentication required",
+		});
+	}
 
-    const { id: projectId, taskId } = req.params;
+	const { id: projectId, taskId } = req.params;
 
-    const {title, description, assigneeId, status, priority, dueDate} = req.body as UpdateTaskBody;
+	const { title, description, assigneeId, status, priority, dueDate } =
+		req.body as UpdateTaskBody;
 
-    const accessResult = await pool.query(
-        `
+	const accessResult = await pool.query(
+		`
             SELECT 1
             FROM projects
             WHERE id = $1
@@ -272,51 +301,51 @@ export const updateTaskController = async (req: Request, res: Response) => {
             WHERE project_id = $1
                 AND user_id = $2
         `,
-        [projectId, req.userId]
-    )
+		[projectId, req.userId]
+	);
 
-    if(accessResult.rows.length === 0) {
-        return res.status(404).json({
-            message: "Project not found"
-        })
-    }
+	if (accessResult.rows.length === 0) {
+		return res.status(404).json({
+			message: "Project not found",
+		});
+	}
 
-    const taskResult = await pool.query(
-        `
+	const taskResult = await pool.query(
+		`
             SELECT 1
             FROM tasks
             WHERE id = $1
                 AND project_id = $2
-        `, 
-        [taskId, projectId]
-    )
+        `,
+		[taskId, projectId]
+	);
 
-    if(taskResult.rows.length === 0) {
-        return res.status(404).json({
-            message: "Task not found"
-        })
-    }
+	if (taskResult.rows.length === 0) {
+		return res.status(404).json({
+			message: "Task not found",
+		});
+	}
 
-    if(assigneeId) {
-        const memberResult = await pool.query(
-            `
+	if (assigneeId) {
+		const memberResult = await pool.query(
+			`
                 SELECT 1
                 FROM project_members
                 WHERE project_id = $1
                     AND user_id = $2
             `,
-            [projectId, assigneeId]
-        )
+			[projectId, assigneeId]
+		);
 
-        if(memberResult.rows.length === 0) {
-            return res.status(400).json({
-                message: "Assignee must be a member of the project"
-            })
-        }
-    }
+		if (memberResult.rows.length === 0) {
+			return res.status(400).json({
+				message: "Assignee must be a member of the project",
+			});
+		}
+	}
 
-    const result = await pool.query(
-        `
+	const result = await pool.query(
+		`
             UPDATE tasks
             SET 
                 title = COALESCE($1, title),
@@ -342,35 +371,35 @@ export const updateTaskController = async (req: Request, res: Response) => {
                 created_at,
                 updated_at
         `,
-        [
-            title ?? null,
-            description ?? null,
-            assigneeId ?? null,
-            status ?? null,
-            priority ?? null,
-            dueDate ?? null,
-            taskId,
-            projectId
-        ]
-    )
+		[
+			title ?? null,
+			description ?? null,
+			assigneeId ?? null,
+			status ?? null,
+			priority ?? null,
+			dueDate ?? null,
+			taskId,
+			projectId,
+		]
+	);
 
-    return res.status(200).json({
-        message: "Task updated successfully",
-        task: result.rows[0]
-    })
-}
+	return res.status(200).json({
+		message: "Task updated successfully",
+		task: result.rows[0],
+	});
+};
 
 export const deleteTaskController = async (req: Request, res: Response) => {
-    if(!req.userId) {
-        return res.status(401).json({
-            message: "Authentication required"
-        })
-    }
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Authentication required",
+		});
+	}
 
-    const { id: projectId, taskId } = req.params;
+	const { id: projectId, taskId } = req.params;
 
-    const result = await pool.query(
-        `
+	const result = await pool.query(
+		`
             DELETE FROM tasks t
             WHERE t.id = $1
                 AND t.project_id = $2
@@ -389,17 +418,17 @@ export const deleteTaskController = async (req: Request, res: Response) => {
                 t.project_id,
                 t.title
         `,
-        [taskId, projectId, req.userId]
-    )
+		[taskId, projectId, req.userId]
+	);
 
-    if(result.rows.length === 0) {
-        return res.status(404).json({
-            message: "Task not found or you don't have permission to delete it"
-        })
-    }
+	if (result.rows.length === 0) {
+		return res.status(404).json({
+			message: "Task not found or you don't have permission to delete it",
+		});
+	}
 
-    return res.status(200).json({
-        message: "Task deleted successfully",
-        task: result.rows[0]
-    })
-}
+	return res.status(200).json({
+		message: "Task deleted successfully",
+		task: result.rows[0],
+	});
+};
