@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import pool from "../config/database.js";
-import type { CreateCommentBody } from "./comments.types.js";
+import type { CreateCommentBody, UpdateCommentBody } from "./comments.types.js";
 
 export const createCommentsController = async (req: Request, res: Response) => {
     if(!req.userId) {
@@ -155,5 +155,58 @@ export const getTaskCommentsController = async (req: Request, res: Response) => 
     return res.status(200).json({
         message: "Comments retrieved successfully",
         comments: result.rows,
+    })
+}
+
+export const updateCommentsController = async (req: Request, res: Response) => {
+    if(!req.userId) {
+        return res.status(401).json({
+            message: "Authentication required"
+        })
+    }
+
+    const {taskId, commentId} = req.params;
+    const {content} = req.body as UpdateCommentBody;
+
+    if(!content?.trim()) {
+        return res.status(400).json({
+            message: "Comment content is required"
+        })
+    }
+
+    const result = await pool.query(
+        `
+            UPDATE comments
+            SET
+                content = $1,
+                updated_at = NOW()
+            WHERE id = $2
+                AND task_id = $3
+                AND user_id = $4
+            RETURNING
+                id,
+                task_id,
+                user_id,
+                content,
+                created_at,
+                updated_at
+        `,
+        [
+            content.trim(),
+            commentId,
+            taskId,
+            req.userId
+        ]
+    )
+
+    if(result.rows.length === 0) {
+        return res.status(404).json({
+            message: "Comment not found or you don't have permission to edit it"
+        })
+    }
+
+    return res.status(200).json({
+        message: "Comment updated successfully",
+        comment: result.rows[0]
     })
 }
