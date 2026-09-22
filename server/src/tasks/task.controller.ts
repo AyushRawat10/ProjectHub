@@ -359,3 +359,47 @@ export const updateTaskController = async (req: Request, res: Response) => {
         task: result.rows[0]
     })
 }
+
+export const deleteTaskController = async (req: Request, res: Response) => {
+    if(!req.userId) {
+        return res.status(401).json({
+            message: "Authentication required"
+        })
+    }
+
+    const { id: projectId, taskId } = req.params;
+
+    const result = await pool.query(
+        `
+            DELETE FROM tasks t
+            WHERE t.id = $1
+                AND t.project_id = $2
+                AND (
+                    EXISTS (
+                        SELECT 1
+                        FROM projects p
+                        WHERE p.id = t.project_id
+                            AND p.owner_id = $3
+                    )
+                    OR t.creator_id = $3
+                )
+
+            RETURNING 
+                t.id,
+                t.project_id,
+                t.title
+        `,
+        [taskId, projectId, req.userId]
+    )
+
+    if(result.rows.length === 0) {
+        return res.status(404).json({
+            message: "Task not found or you don't have permission to delete it"
+        })
+    }
+
+    return res.status(200).json({
+        message: "Task deleted successfully",
+        task: result.rows[0]
+    })
+}
