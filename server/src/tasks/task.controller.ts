@@ -122,14 +122,28 @@ export const getProjectTasksController = async (
 	}
 
 	const { id: projectId } = req.params;
-	const { search, status, priority } = req.query;
-    console.log(search)
 
     if(!projectId || Array.isArray(projectId)) {
         return res.status(400).json({
             message: "Invalid project ID"
         })
     }
+
+	const { search, status, priority } = req.query;
+    const { sortBy, order } = req.query;
+
+    const allowedSortColumns = {
+        created_at: "t.created_at",
+        updated_at: "t.updated_at",
+        due_date: "t.due_date",
+        title: "t.title",
+    } as const;
+
+    const sortColumn = typeof sortBy === "string" && sortBy in allowedSortColumns 
+                            ? allowedSortColumns[sortBy as keyof typeof allowedSortColumns]
+                            : "t.created_at";
+
+    const sortOrder = order === "asc" ? "ASC" : "DESC";
 
 	const accessResult = await pool.query(
 		`
@@ -209,7 +223,7 @@ export const getProjectTasksController = async (
     }
 
     query += `
-        ORDER BY t.created_at DESC
+        ORDER BY ${sortColumn} ${sortOrder}
     `;
 
     const result = await pool.query(query, values);
