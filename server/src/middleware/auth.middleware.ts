@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import type { CustomJwtPayload } from "./auth.types.js";
+import type { CustomJwtPayload } from "../auth/auth.types.js";
 
 export const authenticate = async (
 	req: Request,

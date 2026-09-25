@@ -8,14 +8,16 @@ import {
 	resendVerificationController,
     logoutController,
 } from "./auth.controller.js";
-import { authenticate } from "./auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+import { validate } from "../middleware/validate.middleware.js";
+import { loginSchema, registerSchema, verifyEmailSchema } from "./auth.schemas.js";
 
 const router = Router();
 
-router.post("/register", registerController);
-router.post("/login", loginController);
+router.post("/register", validate(registerSchema), registerController);
+router.post("/login", validate(loginSchema), loginController);
 router.post("/refresh", refreshAccessTokenController);
-router.post("/verify-email", verifyEmailController);
+router.post("/verify-email", validate(verifyEmailSchema), verifyEmailController);
 router.post("/resend-verification", resendVerificationController);
 router.post("/logout", logoutController);
 
