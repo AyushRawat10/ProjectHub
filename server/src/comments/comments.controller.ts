@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import pool from "../config/database.js";
-import type { CreateCommentBody, UpdateCommentBody } from "./comments.types.js";
 
 export const createCommentsController = async (req: Request, res: Response) => {
 	if (!req.userId) {
@@ -10,7 +9,7 @@ export const createCommentsController = async (req: Request, res: Response) => {
 	}
 
 	const { taskId } = req.params;
-	const { content } = req.body as CreateCommentBody;
+	const { content } = req.body;
 
 	if (!content?.trim()) {
 		return res.status(400).json({
@@ -168,7 +167,7 @@ export const updateCommentsController = async (req: Request, res: Response) => {
 	}
 
 	const { taskId, commentId } = req.params;
-	const { content } = req.body as UpdateCommentBody;
+	const { content } = req.body;
 
 	if (!content?.trim()) {
 		return res.status(400).json({

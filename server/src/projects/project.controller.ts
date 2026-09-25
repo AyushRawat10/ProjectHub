@@ -1,9 +1,8 @@
 import type { Request, Response } from "express"
-import type { CreateProjectBody, UpdateProjectBody } from "./project.types.js"
 import pool from "../config/database.js";
 
 export const createProjectController = async (req: Request, res: Response) => {
-    const {name, description} = req.body as CreateProjectBody;
+    const {name, description} = req.body;
 
     if(!name) {
         return res.status(400).json({
@@ -60,10 +59,24 @@ export const getProjectById = async (req: Request, res: Response) => {
 
     const result = await pool.query(
         `
-            SELECT id, owner_id, name, description, created_at, updated_at
-            FROM projects
-            WHERE id = $1
-                AND owner_id = $2
+            SELECT 
+                p.id, 
+                p.owner_id, 
+                p.name, 
+                p.description, 
+                p.created_at, 
+                p.updated_at
+            FROM projects p
+            WHERE p.id = $1
+                AND (
+                    p.owner_id = $2
+                    OR EXISTS (
+                        SELECT 1
+                        FROM project_members pm
+                        WHERE pm.project_id = p.id
+                            AND pm.user_id = $2
+                    )
+                )
         `,
         [id, req.userId]
     )
@@ -88,7 +101,7 @@ export const updateProjectController = async (req: Request, res: Response) => {
     }
 
     const {id} = req.params;
-    const {name, description} = req.body as UpdateProjectBody;
+    const {name, description} = req.body;
 
     if(name === undefined && description === undefined) {
         return res.status(400).json({

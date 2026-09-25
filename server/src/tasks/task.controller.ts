@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import type { CreateTaskBody, UpdateTaskBody } from "./task.types.js";
 import pool from "../config/database.js";
 
 export const createTaskController = async (req: Request, res: Response) => {
@@ -11,7 +10,7 @@ export const createTaskController = async (req: Request, res: Response) => {
 
 	const { id: projectId } = req.params;
 	const { title, description, assigneeId, status, priority, dueDate } =
-		req.body as CreateTaskBody;
+		req.body;
 
 	if (!title) {
 		return res.status(400).json({
@@ -46,6 +45,13 @@ export const createTaskController = async (req: Request, res: Response) => {
 		const memberResult = await pool.query(
 			`
                 SELECT 1
+                FROM projects
+                WHERE id = $1
+                    AND owner_id = $2
+
+                UNION
+
+                SELECT 1
                 FROM project_members
                 WHERE project_id = $1
                     AND user_id = $2
@@ -55,7 +61,7 @@ export const createTaskController = async (req: Request, res: Response) => {
 
 		if (memberResult.rows.length === 0) {
 			return res.status(400).json({
-				message: "Assignee must be a member of the project",
+				message: "Assignee must be the project owner or a project member",
 			});
 		}
 	}
@@ -315,7 +321,7 @@ export const updateTaskController = async (req: Request, res: Response) => {
 	const { id: projectId, taskId } = req.params;
 
 	const { title, description, assigneeId, status, priority, dueDate } =
-		req.body as UpdateTaskBody;
+		req.body;
 
 	const accessResult = await pool.query(
 		`
@@ -360,6 +366,13 @@ export const updateTaskController = async (req: Request, res: Response) => {
 		const memberResult = await pool.query(
 			`
                 SELECT 1
+                FROM projects
+                WHERE id = $1
+                    AND owner_id = $2
+
+                UNION
+
+                SELECT 1
                 FROM project_members
                 WHERE project_id = $1
                     AND user_id = $2
@@ -369,7 +382,7 @@ export const updateTaskController = async (req: Request, res: Response) => {
 
 		if (memberResult.rows.length === 0) {
 			return res.status(400).json({
-				message: "Assignee must be a member of the project",
+				message: "Assignee must be the project owner or a project member",
 			});
 		}
 	}

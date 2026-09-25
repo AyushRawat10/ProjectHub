@@ -9,7 +9,7 @@ export const addMemberController = async (req: Request, res: Response) => {
 	}
 
 	const { id: projectId } = req.params;
-	const { userId } = req.body as { userId: string };
+	const { userId } = req.body;
 
 	if (!userId) {
 		return res.status(400).json({
@@ -31,6 +31,12 @@ export const addMemberController = async (req: Request, res: Response) => {
 		return res.status(404).json({
 			message: "Project not found",
 		});
+	}
+
+	if(userId === req.userId) {
+		return res.status(400).json({
+			message: "Project owner is already a member by default"
+		})
 	}
 
 	const userResult = await pool.query(

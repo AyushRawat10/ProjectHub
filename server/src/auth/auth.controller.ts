@@ -1,7 +1,6 @@
 import type { CookieOptions, Response, Request } from "express";
 import pool from "../config/database.js";
 import bcrypt from "bcrypt";
-import type { RegisterBody, VerifyEmailBody, LoginBody } from "./auth.types.js";
 import {
 	generateAccessToken,
 	generateRefreshToken,
@@ -12,7 +11,7 @@ import {
 import { sendVerificationEmail } from "../service/email.service.js";
 
 export const registerController = async (req: Request, res: Response) => {
-	const { name, email, password } = req.body as RegisterBody;
+	const { name, email, password } = req.body;
 
 	if (!name || !email || !password) {
 		return res.status(400).json({
@@ -75,7 +74,7 @@ export const registerController = async (req: Request, res: Response) => {
 };
 
 export const verifyEmailController = async (req: Request, res: Response) => {
-	const {email, code} = req.body as VerifyEmailBody;
+	const {email, code} = req.body;
 
 	if(!email || !code) {
 		return res.status(400).json({
@@ -173,7 +172,7 @@ export const verifyEmailController = async (req: Request, res: Response) => {
 };
 
 export const loginController = async (req: Request, res: Response) => {
-	const { email, password } = req.body as LoginBody;
+	const { email, password } = req.body;
 
 	if (!email || !password) {
 		res.status(400).json({
