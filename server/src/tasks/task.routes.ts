@@ -9,13 +9,32 @@ import {
 } from "./task.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
 import { createTaskSchema, updateTaskSchema } from "./task.schemas.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
 
 const router = Router();
 
-router.post("/:id/tasks", authenticate, validate(createTaskSchema), createTaskController);
-router.get("/:id/tasks", authenticate, getProjectTasksController);
-router.get("/:id/tasks/:taskId", authenticate, getTaskByIdController);
-router.patch("/:id/tasks/:taskId", authenticate, validate(updateTaskSchema), updateTaskController);
-router.delete("/:id/tasks/:taskId", authenticate, deleteTaskController);
+router.post(
+	"/:id/tasks",
+	authenticate,
+	validate(createTaskSchema),
+	asyncHandler(createTaskController)
+);
+router.get("/:id/tasks", authenticate, asyncHandler(getProjectTasksController));
+router.get(
+	"/:id/tasks/:taskId",
+	authenticate,
+	asyncHandler(getTaskByIdController)
+);
+router.patch(
+	"/:id/tasks/:taskId",
+	authenticate,
+	validate(updateTaskSchema),
+	asyncHandler(updateTaskController)
+);
+router.delete(
+	"/:id/tasks/:taskId",
+	authenticate,
+	asyncHandler(deleteTaskController)
+);
 
 export default router;

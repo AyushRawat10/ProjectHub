@@ -60,7 +60,23 @@ export const registerController = async (req: Request, res: Response) => {
 		[user.id, verificationCodeHash]
 	)
 
-	await sendVerificationEmail( email, verificationCode );
+	try {
+		await sendVerificationEmail( email, verificationCode );
+	} catch (error) {
+		console.error("Failed to send verification email:", error);
+
+		await pool.query(
+			`
+				DELETE FROM email_verification_codes
+				WHERE user_id = $1
+			`,
+			[user.id]
+		);
+
+		return res.status(503).json({
+			message: "Account created, but verification email could not be sent. Please try again later or resend the verification email."
+		})
+	}
 	
 	return res.status(201).json({
 		message: "Registration successful. Please verify your email",

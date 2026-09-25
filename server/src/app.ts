@@ -5,6 +5,7 @@ import projectRoutes from "./projects/project.routes.js";
 import projectMemberRoutes from "./project-members/project-member.routes.js";
 import taskRoutes from "./tasks/task.routes.js";
 import commentRoutes from "./comments/comments.routes.js";
+import { errorHandler } from "./middleware/error.middleware.js";
 
 const app = express();
 
@@ -22,5 +23,7 @@ app.use("/api/projects", projectRoutes)
 app.use("/api/projects", projectMemberRoutes)
 app.use("/api/projects", taskRoutes)
 app.use("/api/tasks", commentRoutes)
+
+app.use(errorHandler)
 
 export default app;

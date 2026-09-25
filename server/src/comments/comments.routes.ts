@@ -7,22 +7,31 @@ import {
 	updateCommentsController,
 } from "./comments.controller.js";
 import { validate } from "../middleware/validate.middleware.js";
-import { createCommentSchema, updateCommentSchema } from "./comments.schemas.js";
+import {
+	createCommentSchema,
+	updateCommentSchema,
+} from "./comments.schemas.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
 
 const router = Router();
 
-router.post("/:taskId/comments", authenticate, validate(createCommentSchema), createCommentsController);
-router.get("/:taskId/comments", authenticate, getTaskCommentsController);
+router.post(
+	"/:taskId/comments",
+	authenticate,
+	validate(createCommentSchema),
+	asyncHandler(createCommentsController)
+);
+router.get("/:taskId/comments", authenticate, asyncHandler(getTaskCommentsController));
 router.patch(
 	"/:taskId/comments/:commentId",
 	authenticate,
 	validate(updateCommentSchema),
-	updateCommentsController
+	asyncHandler(updateCommentsController)
 );
 router.delete(
 	"/:taskId/comments/:commentId",
 	authenticate,
-	deleteCommentsController
+	asyncHandler(deleteCommentsController)
 );
 
 export default router;
