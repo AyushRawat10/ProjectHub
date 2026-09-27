@@ -454,6 +454,12 @@ export const deleteTaskController = async (req: Request, res: Response) => {
                             AND p.owner_id = $3
                     )
                     OR t.creator_id = $3
+                        AND EXISTS (
+                            SELECT 1
+                            FROM project_members pm
+                            WHERE pm.project_id = t.project_id
+                                AND pm.user_id = $3
+                        )
                 )
 
             RETURNING 

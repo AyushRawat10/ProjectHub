@@ -12,53 +12,70 @@ import { sendVerificationEmail } from "../service/email.service.js";
 
 export const registerController = async (req: Request, res: Response) => {
 	const { name, email, password } = req.body;
+	const client = await pool.connect();
 
-	if (!name || !email || !password) {
-		return res.status(400).json({
-			message: "Name, email and password are required",
-		});
-	}
+	let user;
+	let verificationCode: string;
 
-	if (password.length < 8) {
-		return res.status(400).json({
-			message: "Password must be at least 8 characters",
-		});
-	}
+	try {
+		await client.query("BEGIN");
 
-	const existingUser = await pool.query(
-		"SELECT id FROM users WHERE email = $1",
-		[email]
-	);
-
-	if (existingUser.rows.length > 0) {
-		return res.status(409).json({
-			message: "Email is already registered",
-		});
-	}
-
-	const passwordHash = await bcrypt.hash(password, 12);
-
-	const result = await pool.query(
-		`
-        INSERT INTO users (name, email, password_hash, email_verified)
-        VALUES ($1, $2, $3, FALSE)
-        RETURNING id, name, email, role, avatar_url, email_verified, created_at
-        `,
-		[name, email, passwordHash]
-	);
+		const existingUser = await client.query(
+			"SELECT id FROM users WHERE email = $1",
+			[email]
+		);
 	
-	const user = result.rows[0];
+		if (existingUser.rows.length > 0) {
+			await client.query("ROLLBACK");
 
-	const verificationCode = generateVerificationCode();
-	const verificationCodeHash = hashSessionToken(verificationCode);
+			return res.status(409).json({
+				message: "Email is already registered",
+			});
+		}
+	
+		const passwordHash = await bcrypt.hash(password, 12);
+	
+		try {
+			const result = await client.query(
+				`
+				INSERT INTO users (name, email, password_hash, email_verified)
+				VALUES ($1, $2, $3, FALSE)
+				RETURNING id, name, email, role, avatar_url, email_verified, created_at
+				`,
+				[name, email, passwordHash]
+			);
 
-	await pool.query(
-		`
-			INSERT INTO email_verification_codes (user_id, code_hash, expires_at)
-			VALUES ($1, $2, NOW() + INTERVAL '10 minutes')
-		`,
-		[user.id, verificationCodeHash]
-	)
+			user = result.rows[0];
+		} catch (error: any) {
+			if(error.code === "23505") {
+				await client.query("ROLLBACK");
+
+				return res.status(409).json({
+					message: "Email is already registered"
+				})
+			}
+	
+			throw error;
+		}
+		
+		verificationCode = generateVerificationCode();
+		const verificationCodeHash = hashSessionToken(verificationCode);
+	
+		await client.query(
+			`
+				INSERT INTO email_verification_codes (user_id, code_hash, expires_at)
+				VALUES ($1, $2, NOW() + INTERVAL '10 minutes')
+			`,
+			[user.id, verificationCodeHash]
+		)
+
+		await client.query("COMMIT");
+	} catch (error) {
+		await client.query("ROLLBACK");
+		throw error;
+	} finally {
+		client.release();
+	}
 
 	try {
 		await sendVerificationEmail( email, verificationCode );
@@ -77,6 +94,7 @@ export const registerController = async (req: Request, res: Response) => {
 			message: "Account created, but verification email could not be sent. Please try again later or resend the verification email."
 		})
 	}
+
 	
 	return res.status(201).json({
 		message: "Registration successful. Please verify your email",
@@ -91,12 +109,6 @@ export const registerController = async (req: Request, res: Response) => {
 
 export const verifyEmailController = async (req: Request, res: Response) => {
 	const {email, code} = req.body;
-
-	if(!email || !code) {
-		return res.status(400).json({
-			message: "Email and verification code are required"
-		})
-	}
 
 	const userResult = await pool.query(
 		`
@@ -155,6 +167,7 @@ export const verifyEmailController = async (req: Request, res: Response) => {
 				UPDATE email_verification_codes
 				SET attempts = attempts + 1
 				WHERE id = $1
+					AND attempts < 5
 			`,
 			[verification.id]
 		)
@@ -164,23 +177,46 @@ export const verifyEmailController = async (req: Request, res: Response) => {
 		})
 	}
 
-	await pool.query(
-		`
-			UPDATE users
-			SET email_verified = TRUE,
-				updated_at = NOW()
-			WHERE id = $1
-		`,
-		[user.id]
-	);
+	const client = await pool.connect();
 
-	await pool.query(
-		`
-			DELETE FROM email_verification_codes
-			WHERE user_id = $1
-		`,
-		[user.id]
-	)
+	try {
+		await client.query("BEGIN");
+		
+		const updateResult = await client.query(
+			`
+				UPDATE users
+				SET email_verified = TRUE,
+					updated_at = NOW()
+				WHERE id = $1
+					AND email_verified = FALSE
+				RETURNING id
+			`,
+			[user.id]
+		);
+
+		if(updateResult.rows.length === 0) {
+			await client.query("ROLLBACK");
+
+			return res.status(400).json({
+				message: "Email is already verified"
+			})
+		}
+	
+		await client.query(
+			`
+				DELETE FROM email_verification_codes
+				WHERE user_id = $1
+			`,
+			[user.id]
+		)
+
+		await client.query("COMMIT");
+	} catch (error) {
+		await client.query("ROLLBACK");
+		throw error;
+	} finally {
+		client.release();
+	}
 
 	return res.status(200).json({
 		message: "Email verified successfully"
@@ -189,12 +225,6 @@ export const verifyEmailController = async (req: Request, res: Response) => {
 
 export const loginController = async (req: Request, res: Response) => {
 	const { email, password } = req.body;
-
-	if (!email || !password) {
-		res.status(400).json({
-			message: "email and password are required",
-		});
-	}
 
 	const emailFinder = await pool.query(
 		`
@@ -241,8 +271,9 @@ export const loginController = async (req: Request, res: Response) => {
 
 	const options: CookieOptions = {
 		httpOnly: true,
-		secure: false,
+		secure: process.env.NODE_ENV === "production",
 		sameSite: "lax",
+		path: "/api/auth",
 		maxAge: 7 * 24 * 60 * 60 * 1000,
 	};
 
@@ -270,7 +301,7 @@ export const getMeController = async (req: Request, res: Response) => {
 
 	const result = await pool.query(
 		`
-            SELECT id, name, email, role, avatar_url, created_at
+            SELECT id, name, email, role, avatar_url, email_verified, created_at
             FROM users
             WHERE id = $1
         `,
@@ -302,51 +333,60 @@ export const refreshAccessTokenController = async (req: Request, res: Response) 
 
 		const oldRefreshTokenHash = hashSessionToken(refreshToken);
 
-		const result = await pool.query(
-			`
-            SELECT id 
-            FROM user_sessions
-            WHERE user_id = $1
-                AND refresh_token_hash = $2
-                AND expires_at > NOW()
-                AND revoked_at IS NULL
-            `,
-			[userId, oldRefreshTokenHash]
-		);
+		const client = await pool.connect();
 
-		if (result.rows.length === 0) {
-			return res.status(401).json({
-				message: "Invalid or expired refresh token",
-			});
-		}
+		let newRefreshToken: string;
+		let accessToken: string;
 
-		const sessionId = result.rows[0].id;
+		try {
+			await client.query("BEGIN");
 
-		await pool.query(
-			`
+			const result = await client.query(
+				`
 				UPDATE user_sessions
 				SET revoked_at = NOW()
-				WHERE id = $1
-			`,
-			[sessionId]
-		)
+				WHERE user_id = $1
+					AND refresh_token_hash = $2
+					AND expires_at > NOW()
+					AND revoked_at IS NULL
+				RETURNING id
+				`,
+				[userId, oldRefreshTokenHash]
+			);
+	
+			if (result.rows.length === 0) {
+				await client.query("ROLLBACK");
 
-		const accessToken = generateAccessToken(userId);
-		const newRefreshToken = generateRefreshToken(userId);
-		const newRefreshTokenHash = hashSessionToken(newRefreshToken);
+				return res.status(401).json({
+					message: "Invalid or expired refresh token",
+				});
+			}
+	
+			accessToken = generateAccessToken(userId);
+			newRefreshToken = generateRefreshToken(userId);
+			const newRefreshTokenHash = hashSessionToken(newRefreshToken);
+	
+			await client.query(
+				`
+					INSERT INTO user_sessions (user_id, refresh_token_hash, expires_at)	
+					VALUES ($1, $2, NOW() + INTERVAL '7 days')
+				`,
+				[userId, newRefreshTokenHash]
+			)
 
-		await pool.query(
-			`
-				INSERT INTO user_sessions (user_id, refresh_token_hash, expires_at)	
-				VALUES ($1, $2, NOW() + INTERVAL '7 days')
-			`,
-			[userId, newRefreshTokenHash]
-		)
+			await client.query("COMMIT");
+		} catch (error) {
+			await client.query("ROLLBACK");
+			throw error;
+		} finally {
+			client.release();
+		}
 
 		const options: CookieOptions = {
 			httpOnly: true,
-			secure: false,
+			secure: process.env.NODE_ENV === "production",
 			sameSite: "lax",
+			path: "/api/auth",
 			maxAge: 7 * 24 * 60 * 60 * 1000
 		};
 
@@ -354,10 +394,12 @@ export const refreshAccessTokenController = async (req: Request, res: Response) 
 
 		return res.status(200).json({
 			accessToken,
-			message: "Generate new access token successfully"
+			message: "Access token refreshed successfully"
 		});
 
 	} catch (error) {
+		console.error("Refresh token error:", error);
+
 		return res.status(401).json({
 			message: "Invalid refresh token",
 		});
@@ -365,13 +407,7 @@ export const refreshAccessTokenController = async (req: Request, res: Response) 
 };
 
 export const resendVerificationController = async (req: Request, res: Response) => {
-	const {email} = req.body as {email: string};
-
-	if(!email) {
-		return res.status(400).json({
-			message: "Email is required"
-		})
-	}
+	const {email} = req.body;
 
 	const userResult = await pool.query(
 		`
@@ -384,7 +420,7 @@ export const resendVerificationController = async (req: Request, res: Response) 
 
 	if(userResult.rows.length === 0) {
 		return res.status(400).json({
-			message: "Invalid verificaion request"
+			message: "Invalid verification request"
 		})
 	}
 
@@ -399,23 +435,52 @@ export const resendVerificationController = async (req: Request, res: Response) 
 	const verificationCode = generateVerificationCode();
 	const codeHash = hashSessionToken(verificationCode);
 
-	await pool.query(
-		`
-			DELETE FROM email_verification_codes
-			WHERE user_id = $1
-		`,
-		[user.id]
-	);
+	const client = await pool.connect();
 
-	await pool.query(
-		`
-			INSERT INTO email_verification_codes (user_id, code_hash, expires_at)
-			VALUES ($1, $2, NOW() + INTERVAL '10 minutes')
-		`,
-		[user.id, codeHash]
-	)
+	try {
+		await client.query("BEGIN");
+		
+		await client.query(
+			`
+				DELETE FROM email_verification_codes
+				WHERE user_id = $1
+			`,
+			[user.id]
+		);
+	
+		await client.query(
+			`
+				INSERT INTO email_verification_codes (user_id, code_hash, expires_at)
+				VALUES ($1, $2, NOW() + INTERVAL '10 minutes')
+			`,
+			[user.id, codeHash]
+		)
 
-	await sendVerificationEmail( email, verificationCode );
+		await client.query("COMMIT");
+	} catch (error) {
+		await client.query("ROLLBACK");
+		throw error;
+	} finally {
+		client.release();
+	}
+
+	try {
+		await sendVerificationEmail( email, verificationCode );
+	} catch (error) {
+		console.error("Failed to send verification email:", error);
+
+		await pool.query(
+			`
+				DELETE FROM email_verification_codes
+				WHERE user_id = $1
+			`,
+			[user.id]
+		);
+
+		return res.status(503).json({
+			message: "Verification email could not be sent. Please try again later or resend the verification email."
+		})
+	}
 
 	return res.status(200).json({
 		message: "A new verification code has been generated"
@@ -441,8 +506,9 @@ export const logoutController = async (req: Request, res: Response) => {
 
 	const options: CookieOptions = {
 		httpOnly: true,
-		secure: false,
-		sameSite: "lax"
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "lax",
+		path: "/api/auth"
 	}
 
 	res.clearCookie("refresh_token", options)

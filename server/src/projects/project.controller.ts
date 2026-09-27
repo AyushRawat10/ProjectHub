@@ -2,6 +2,12 @@ import type { Request, Response } from "express"
 import pool from "../config/database.js";
 
 export const createProjectController = async (req: Request, res: Response) => {
+    if (!req.userId) {
+        return res.status(401).json({
+            message: "Authentication required",
+        });
+    }
+    
     const {name, description} = req.body;
 
     if(!name) {

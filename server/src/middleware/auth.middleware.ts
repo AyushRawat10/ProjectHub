@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import type { CustomJwtPayload } from "../auth/auth.types.js";
 
-export const authenticate = async (
+export const authenticate = (
 	req: Request,
 	res: Response,
 	next: NextFunction
@@ -15,7 +15,7 @@ export const authenticate = async (
         });
     }
     
-    const accessToken = authHeader.split(" ")[1];
+    const accessToken = authHeader.slice(7).trim();
     
     try {
 
@@ -36,11 +36,20 @@ export const authenticate = async (
             secret,
         ) as CustomJwtPayload;
 
+        if(typeof decoded.userId !== "string" || !decoded.userId) {
+            return res.status(401).json({
+                message: "Invalid access token"
+            })
+        }
 
 		req.userId = decoded.userId;
 
 		next();
 	} catch (error) {
         console.error("ERROR ! Invalid or expired access token : ", error)
+
+        return res.status(401).json({
+            message: "Invalid or expired access token"
+        })
     }
 };

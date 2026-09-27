@@ -70,19 +70,30 @@ export const addMemberController = async (req: Request, res: Response) => {
 		});
 	}
 
-	const result = await pool.query(
-		`
-            INSERT INTO project_members (project_id, user_id)
-            VALUES ($1, $2)
-            RETURNING project_id, user_id, joined_at
-        `,
-		[projectId, userId]
-	);
+	try {
+		const result = await pool.query(
+			`
+				INSERT INTO project_members (project_id, user_id)
+				VALUES ($1, $2)
+				RETURNING project_id, user_id, joined_at
+			`,
+			[projectId, userId]
+		);
 
-	return res.status(201).json({
-		message: "Member added successfully",
-		member: result.rows[0],
-	});
+		return res.status(201).json({
+			message: "Member added successfully",
+			member: result.rows[0],
+		});
+	} catch (error: any) {
+		if (error.code === "23505") {
+			return res.status(409).json({
+				message: "User is already a member of this project",
+			});
+		}
+
+		throw error;
+	}
+	
 };
 
 export const getAllProjectMembersController = async (
@@ -138,7 +149,7 @@ export const getAllProjectMembersController = async (
 	);
 
 	return res.status(200).json({
-		message: "List of all memebers",
+		message: "List of all members",
 		members: result.rows,
 	});
 };

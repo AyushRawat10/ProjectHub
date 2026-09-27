@@ -24,10 +24,22 @@ export const generateRefreshToken = (userId: string): string => {
 };
 
 export const verifyRefreshToken = (token: string) => {
-	return jwt.verify(
-        token, 
-        process.env.REFRESH_TOKEN_SECRET!
-    ) as { userId: string; };
+
+    const secret = process.env.REFRESH_TOKEN_SECRET;
+
+    if(!secret) {
+        throw new Error("REFRESH_TOKEN_SECRET is missing");
+    }
+
+    const decoded = jwt.verify(token, secret);
+
+    if(typeof decoded === "object" && decoded !== null && typeof decoded.userId === "string" && decoded.userId) {
+        return {
+            userId: decoded.userId
+        }
+    }
+
+    throw new Error("Invalid refresh token payload");
 };
 
 export const generateVerificationCode = (): string => {
