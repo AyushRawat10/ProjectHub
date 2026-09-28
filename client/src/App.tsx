@@ -1,15 +1,23 @@
+import { BrowserRouter, Routes, Route } from "react-router"
+import Home from "./pages/Home"
+import Login from "./pages/Login"
+import Register from "./pages/Register"
+import Dashboard from "./pages/Dashboard"
 
 function App() {
 
   return (
-    <>
-      <div className="flex min-h-screen items-center justify-center bg-slate-900">
-        <h1 className="text-5xl font-bold text-green-400">
-          ProjectHub
-        </h1>
-      </div>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
+    
   )
 }
 
 export default App
+ 

@@ -1,11 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@theme {
+  --color-primary: #035352;
+  --color-secondary: #f3e8bc;
+  --color-tertiary: #023d3d;
+  --color-neutral: #172121;
+
+  --color-paper: #fbf7e6;
+  --color-panel: #fffdf3;
+  --color-line: #e3dbb4;
+  --color-muted: #4e5d5c;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: Arial, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-neutral);
+  font-family: var(--font-sans);
 }
