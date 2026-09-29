@@ -7,6 +7,7 @@ import VerifyEmail from "./pages/VerifyEmail"
 import Projects from "./pages/Projects"
 import ProjectDetails from "./pages/ProjectDetails"
 import KanbanBoard from "./pages/KanbanBoard"
+import TaskDetails from "./pages/TaskDetails"
 
 function App() {
 
@@ -22,6 +23,7 @@ function App() {
         <Route path="/projects" element={<Projects />} />
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/projects/:projectId/board" element={<KanbanBoard />} />
+        <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetails />} />
       </Routes>
     </BrowserRouter>
   )
