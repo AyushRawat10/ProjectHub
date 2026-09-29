@@ -303,7 +303,6 @@ const Dashboard = () => {
                   progress={45}
                   updated="Yesterday"
                   color="bg-secondary"
-                  darkText
                 />
 
                 <ProjectCard
@@ -359,7 +358,7 @@ const Dashboard = () => {
 
                 {/* Desktop table */}
                 <div className="hidden overflow-x-auto md:block">
-                  <table className="w-full min-w-[720px] text-sm">
+                  <table className="w-full min-w-180 text-sm">
                     <thead>
                       <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
                         <th className="px-5 py-3 font-medium">
@@ -632,7 +631,6 @@ type ProjectCardProps = {
   progress: number;
   updated: string;
   color: string;
-  darkText?: boolean;
 };
 
 const ProjectCard = ({
@@ -642,8 +640,7 @@ const ProjectCard = ({
   tasks,
   progress,
   updated,
-  color,
-  darkText = false,
+  color
 }: ProjectCardProps) => {
   return (
     <Link
@@ -670,7 +667,7 @@ const ProjectCard = ({
         {title}
       </h3>
 
-      <p className="mt-2 min-h-[48px] text-sm leading-6 text-muted">
+      <p className="mt-2 min-h-12 text-sm leading-6 text-muted">
         {description}
       </p>
 
