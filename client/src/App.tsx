@@ -5,6 +5,7 @@ import Register from "./pages/Register"
 import Dashboard from "./pages/Dashboard"
 import VerifyEmail from "./pages/VerifyEmail"
 import Projects from "./pages/Projects"
+import ProjectDetails from "./pages/ProjectDetails"
 
 function App() {
 
@@ -18,9 +19,9 @@ function App() {
 
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/:projectId" element={<ProjectDetails />} />
       </Routes>
     </BrowserRouter>
-    
   )
 }
 
