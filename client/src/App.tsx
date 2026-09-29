@@ -10,6 +10,7 @@ import KanbanBoard from "./pages/KanbanBoard"
 import TaskDetails from "./pages/TaskDetails"
 import TeamMembers from "./pages/TeamMembers"
 import Settings from "./pages/Settings"
+import MyTasks from "./pages/MyTasks"
 
 function App() {
 
@@ -23,6 +24,7 @@ function App() {
 
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/tasks" element={<MyTasks />} />
         <Route path="/projects/:projectId" element={<ProjectDetails />} />
         <Route path="/projects/:projectId/board" element={<KanbanBoard />} />
         <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetails />} />

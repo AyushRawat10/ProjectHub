@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import AppHeader from "../components/layouts/AppHeader";
+import Sidebar from "../components/layouts/Sidebar";
 
 const Dashboard = () => {
   return (
@@ -10,131 +11,7 @@ const Dashboard = () => {
       {/* ==================== APP LAYOUT ==================== */}
       <div className="flex min-h-[calc(100vh-4rem)]">
         {/* ==================== SIDEBAR ==================== */}
-        <aside className="hidden w-64 shrink-0 border-r border-line bg-panel lg:block">
-          <div className="flex h-full flex-col p-4">
-            {/* Workspace switcher */}
-            <button
-              type="button"
-              className="mb-3 flex w-full items-center justify-between rounded-lg bg-secondary/50 px-3 py-2.5 text-left transition-colors hover:bg-secondary"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-[10px] font-semibold text-secondary">
-                  PH
-                </span>
-
-                <span className="truncate text-sm font-medium">
-                  My Workspace
-                </span>
-              </span>
-
-              <ChevronDownIcon />
-            </button>
-
-            {/* New project */}
-            <Link
-              to="/projects/new"
-              className="mb-7 flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-secondary transition-colors hover:bg-tertiary"
-            >
-              <PlusIcon />
-              New Project
-            </Link>
-
-            {/* Navigation */}
-            <div>
-              <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
-                Workspace
-              </p>
-
-              <SidebarItem
-                icon={<GridIcon />}
-                label="Dashboard"
-                active
-              />
-
-              <SidebarItem
-                icon={<FolderIcon />}
-                label="Projects"
-                count="3"
-              />
-
-              <SidebarItem
-                icon={<CheckSquareIcon />}
-                label="My Tasks"
-                count="8"
-              />
-
-              <SidebarItem
-                icon={<UsersIcon />}
-                label="Team Members"
-              />
-            </div>
-
-            {/* Projects */}
-            <div className="mt-8">
-              <div className="mb-2 flex items-center justify-between px-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
-                  Projects
-                </p>
-
-                <Link
-                  to="/projects"
-                  className="text-xs text-primary hover:underline"
-                >
-                  View all
-                </Link>
-              </div>
-
-              <ProjectSidebarItem
-                name="ProjectHub"
-                color="bg-primary"
-              />
-
-              <ProjectSidebarItem
-                name="DevPulse"
-                color="bg-secondary"
-              />
-
-              <ProjectSidebarItem
-                name="Portfolio"
-                color="bg-muted"
-              />
-            </div>
-
-            {/* Bottom */}
-            <div className="mt-auto">
-              <SidebarItem
-                icon={<SettingsIcon />}
-                label="Settings"
-              />
-
-              <div className="mt-4 rounded-lg border border-line bg-paper p-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-secondary">
-                    AR
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      Ayush Rawat
-                    </p>
-
-                    <p className="truncate text-xs text-muted">
-                      Account
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="ml-auto text-muted"
-                    aria-label="More options"
-                  >
-                    <MoreIcon />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
+        <Sidebar activePage="dashboard" />
 
         {/* ==================== MAIN CONTENT ==================== */}
         <main className="min-w-0 flex-1">
@@ -446,68 +323,6 @@ const Dashboard = () => {
    SIDEBAR
    ============================================================ */
 
-type SidebarItemProps = {
-  icon: React.ReactNode;
-  label: string;
-  count?: string;
-  active?: boolean;
-};
-
-const SidebarItem = ({
-  icon,
-  label,
-  count,
-  active = false,
-}: SidebarItemProps) => {
-  return (
-    <Link
-      to="#"
-      className={`mb-1 flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
-        active
-          ? "bg-primary text-secondary"
-          : "text-muted hover:bg-secondary/40 hover:text-neutral"
-      }`}
-    >
-      {icon}
-
-      <span>{label}</span>
-
-      {count && (
-        <span
-          className={`ml-auto rounded-full px-2 py-0.5 text-[11px] ${
-            active
-              ? "bg-secondary/20 text-secondary"
-              : "bg-secondary text-tertiary"
-          }`}
-        >
-          {count}
-        </span>
-      )}
-    </Link>
-  );
-};
-
-type ProjectSidebarItemProps = {
-  name: string;
-  color: string;
-};
-
-const ProjectSidebarItem = ({
-  name,
-  color,
-}: ProjectSidebarItemProps) => {
-  return (
-    <Link
-      to="#"
-      className="mb-1 flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted hover:bg-secondary/40 hover:text-neutral"
-    >
-      <span className={`h-2 w-2 rounded-full ${color}`} />
-
-      <span className="truncate">{name}</span>
-    </Link>
-  );
-};
-
 const MobileNavItem = ({
   label,
   active = false,
@@ -813,34 +628,6 @@ const SearchIcon = () => (
   </svg>
 );
 
-const UserIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-4 w-4"
-  >
-    <circle cx="12" cy="8" r="3.2" />
-    <path d="M5.5 20c.7-3.3 3.1-5 6.5-5s5.8 1.7 6.5 5" />
-  </svg>
-);
-
-const GridIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-4 w-4"
-  >
-    <rect x="4" y="4" width="6" height="6" rx="1" />
-    <rect x="14" y="4" width="6" height="6" rx="1" />
-    <rect x="4" y="14" width="6" height="6" rx="1" />
-    <rect x="14" y="14" width="6" height="6" rx="1" />
-  </svg>
-);
-
 const FolderIcon = () => (
   <svg
     viewBox="0 0 24 24"
@@ -881,20 +668,6 @@ const UsersIcon = () => (
   </svg>
 );
 
-const SettingsIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-4 w-4"
-  >
-    <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V20h-2.5v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1A1.7 1.7 0 0 0 8 15a1.7 1.7 0 0 0-1.6-1H6v-2.5h.4A1.7 1.7 0 0 0 8 10a1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V5h2.5v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.4V14h-.4a1.7 1.7 0 0 0-1.6 1Z"
-    />
-  </svg>
-);
-
 const PlusIcon = () => (
   <svg
     viewBox="0 0 24 24"
@@ -904,42 +677,6 @@ const PlusIcon = () => (
     className="h-4 w-4"
   >
     <path d="M12 5v14M5 12h14" />
-  </svg>
-);
-
-const ChevronRightIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-3.5 w-3.5"
-  >
-    <path d="m9 18 6-6-6-6" />
-  </svg>
-);
-
-const ChevronDownIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-3.5 w-3.5"
-  >
-    <path d="m6 9 6 6 6-6" />
-  </svg>
-);
-
-const MoreIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className="h-4 w-4"
-  >
-    <circle cx="5" cy="12" r="1.5" />
-    <circle cx="12" cy="12" r="1.5" />
-    <circle cx="19" cy="12" r="1.5" />
   </svg>
 );
 
