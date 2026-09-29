@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
+import AppHeader from "../components/layouts/AppHeader";
 
 type Role = "ADMIN" | "LEADER" | "MEMBER";
 
@@ -195,40 +196,7 @@ const TeamMembers = () => {
   return (
     <div className="min-h-screen bg-paper text-neutral">
       {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <Link to="/dashboard" className="text-xl font-black tracking-tight">
-            Project<span className="text-primary">Hub</span>
-          </Link>
-
-          <div className="hidden items-center gap-6 md:flex">
-            <Link
-              to="/dashboard"
-              className="text-sm font-semibold text-muted transition hover:text-primary"
-            >
-              Dashboard
-            </Link>
-
-            <Link
-              to="/projects"
-              className="text-sm font-semibold text-muted transition hover:text-primary"
-            >
-              Projects
-            </Link>
-
-            <Link
-              to="/team-members"
-              className="text-sm font-bold text-primary"
-            >
-              Team
-            </Link>
-          </div>
-
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-            AR
-          </div>
-        </div>
-      </header>
+      <AppHeader pageTitle="Team Members" />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
