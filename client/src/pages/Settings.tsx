@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import AppHeader from "../components/layouts/AppHeader";
+import Badge from "../components/ui/Badge";
+import Button from "../components/ui/Button";
 
 type SettingsSection = "profile" | "notifications" | "workspace" | "security";
 
@@ -175,11 +177,11 @@ const Settings = () => {
 
         {/* Heading */}
         <section className="mb-8">
-          <p className="mb-2 text-sm font-bold uppercase tracking-widest text-primary">
+          <p className="mb-2 text-sm font-medium uppercase tracking-widest text-primary">
             Preferences
           </p>
 
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+          <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
             Settings
           </h1>
 
@@ -214,7 +216,7 @@ const Settings = () => {
                 </span>
 
                 <span className="min-w-0">
-                  <span className="block text-sm font-bold">
+                  <span className="block text-sm font-medium">
                     {section.label}
                   </span>
 
@@ -240,7 +242,7 @@ const Settings = () => {
               <LogOutIcon />
 
               <span>
-                <span className="block text-sm font-bold">Log out</span>
+                <span className="block text-sm font-medium">Log out</span>
                 <span className="mt-0.5 block text-xs text-red-500/70">
                   Sign out of your account
                 </span>
@@ -255,7 +257,7 @@ const Settings = () => {
               <div className="space-y-6">
                 <div className="rounded-2xl border border-line bg-panel">
                   <div className="border-b border-line p-5 sm:p-6">
-                    <h2 className="text-lg font-black">Profile</h2>
+                    <h2 className="font-display text-xl font-semibold">Profile</h2>
                     <p className="mt-1 text-sm text-muted">
                       Update your personal information.
                     </p>
@@ -263,22 +265,22 @@ const Settings = () => {
 
                   <div className="p-5 sm:p-6">
                     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-xl font-black text-white">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-xl font-semibold text-secondary">
                         AR
                       </div>
 
                       <div>
-                        <h3 className="font-bold">Profile photo</h3>
+                        <h3 className="font-semibold">Profile photo</h3>
                         <p className="mt-1 text-sm text-muted">
                           JPG, PNG or WEBP. Maximum size 2MB.
                         </p>
 
-                        <button
-                          type="button"
-                          className="mt-3 rounded-lg border border-line bg-paper px-4 py-2 text-sm font-bold hover:border-primary hover:text-primary"
+                        <Button
+                          variant="outline"
+                          className="mt-3 rounded-lg px-4 py-2 text-sm font-medium"
                         >
                           Change photo
-                        </button>
+                        </Button>
                       </div>
                     </div>
 
@@ -331,12 +333,11 @@ const Settings = () => {
                     </div>
 
                     <div className="mt-6 flex justify-end">
-                      <button
-                        type="button"
-                        className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-tertiary"
+                      <Button
+                        className="rounded-xl px-5 py-3 text-sm font-medium text-white"
                       >
                         Save Changes
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -347,7 +348,7 @@ const Settings = () => {
             {activeSection === "notifications" && (
               <div className="rounded-2xl border border-line bg-panel">
                 <div className="border-b border-line p-5 sm:p-6">
-                  <h2 className="text-lg font-black">Notifications</h2>
+                  <h2 className="font-display text-xl font-semibold">Notifications</h2>
                   <p className="mt-1 text-sm text-muted">
                     Choose what ProjectHub should notify you about.
                   </p>
@@ -356,7 +357,7 @@ const Settings = () => {
                 <div className="divide-y divide-line">
                   <div className="flex items-center justify-between gap-5 p-5 sm:p-6">
                     <div>
-                      <h3 className="font-bold">Email notifications</h3>
+                      <h3 className="font-semibold">Email notifications</h3>
                       <p className="mt-1 text-sm leading-5 text-muted">
                         Receive important updates and account notifications by
                         email.
@@ -373,7 +374,7 @@ const Settings = () => {
 
                   <div className="flex items-center justify-between gap-5 p-5 sm:p-6">
                     <div>
-                      <h3 className="font-bold">Task notifications</h3>
+                      <h3 className="font-semibold">Task notifications</h3>
                       <p className="mt-1 text-sm leading-5 text-muted">
                         Get notified when tasks are assigned or updated.
                       </p>
@@ -389,7 +390,7 @@ const Settings = () => {
 
                   <div className="flex items-center justify-between gap-5 p-5 sm:p-6">
                     <div>
-                      <h3 className="font-bold">Project activity</h3>
+                      <h3 className="font-semibold">Project activity</h3>
                       <p className="mt-1 text-sm leading-5 text-muted">
                         Receive updates about activity in your projects.
                       </p>
@@ -405,7 +406,7 @@ const Settings = () => {
 
                   <div className="flex items-center justify-between gap-5 p-5 sm:p-6">
                     <div>
-                      <h3 className="font-bold">Weekly summary</h3>
+                      <h3 className="font-semibold">Weekly summary</h3>
                       <p className="mt-1 text-sm leading-5 text-muted">
                         Receive a weekly summary of your workspace activity.
                       </p>
@@ -425,7 +426,7 @@ const Settings = () => {
               <div className="space-y-6">
                 <div className="rounded-2xl border border-line bg-panel">
                   <div className="border-b border-line p-5 sm:p-6">
-                    <h2 className="text-lg font-black">Workspace</h2>
+                    <h2 className="font-display text-xl font-semibold">Workspace</h2>
                     <p className="mt-1 text-sm text-muted">
                       Configure how your workspace appears and behaves.
                     </p>
@@ -470,18 +471,17 @@ const Settings = () => {
                     </label>
 
                     <div className="flex justify-end pt-2">
-                      <button
-                        type="button"
-                        className="rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-tertiary"
+                      <Button
+                        className="rounded-xl px-5 py-3 text-sm font-medium text-white"
                       >
                         Save Changes
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-5 sm:p-6">
-                  <h2 className="font-black text-red-700">
+                  <h2 className="font-display text-xl font-semibold text-red-700">
                     Danger Zone
                   </h2>
 
@@ -504,7 +504,7 @@ const Settings = () => {
               <div className="space-y-6">
                 <div className="rounded-2xl border border-line bg-panel">
                   <div className="border-b border-line p-5 sm:p-6">
-                    <h2 className="text-lg font-black">Security</h2>
+                    <h2 className="font-display text-xl font-semibold">Security</h2>
                     <p className="mt-1 text-sm text-muted">
                       Manage your password and account security.
                     </p>
@@ -512,12 +512,12 @@ const Settings = () => {
 
                   <div className="p-5 sm:p-6">
                     <div className="mb-6 flex items-center gap-4 rounded-xl bg-secondary/40 p-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-secondary">
                         <LockIcon />
                       </div>
 
                       <div>
-                        <h3 className="font-bold">Password</h3>
+                        <h3 className="font-semibold">Password</h3>
                         <p className="mt-1 text-xs text-muted">
                           Last changed 30 days ago
                         </p>
@@ -575,7 +575,7 @@ const Settings = () => {
 
                 <div className="rounded-2xl border border-line bg-panel">
                   <div className="border-b border-line p-5 sm:p-6">
-                    <h2 className="text-lg font-black">
+                    <h2 className="font-display text-xl font-semibold">
                       Active Sessions
                     </h2>
 
@@ -587,7 +587,7 @@ const Settings = () => {
                   <div className="p-5 sm:p-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h3 className="font-bold">
+                        <h3 className="font-semibold">
                           Windows · Chrome
                         </h3>
 
@@ -596,14 +596,17 @@ const Settings = () => {
                         </p>
                       </div>
 
-                      <span className="inline-flex w-fit rounded-full bg-secondary px-3 py-1 text-xs font-bold">
+                      <Badge
+                        variant="default"
+                        className="px-3 py-1 text-xs font-medium"
+                      >
                         Current
-                      </span>
+                      </Badge>
                     </div>
 
                     <button
                       type="button"
-                      className="mt-5 text-sm font-bold text-primary hover:text-tertiary"
+                      className="mt-5 text-sm font-medium text-primary hover:text-tertiary"
                     >
                       Sign out of all other sessions
                     </button>
