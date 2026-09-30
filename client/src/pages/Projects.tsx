@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import AppHeader from "../components/layouts/AppHeader";
 import Sidebar from "../components/layouts/Sidebar";
+import Badge from "../components/ui/Badge";
 
 type Project = {
   id: string;
@@ -111,9 +112,12 @@ const Projects = () => {
                       Projects
                     </h1>
 
-                    <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-tertiary">
+                    <Badge
+                      variant="default"
+                      className="px-2.5 py-1 text-xs"
+                    >
                       {projects.length} active
-                    </span>
+                    </Badge>
                   </div>
 
                   <p className="max-w-xl text-sm leading-6 text-muted sm:text-base">
