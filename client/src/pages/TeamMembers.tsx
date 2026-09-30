@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import AppHeader from "../components/layouts/AppHeader";
+import Button from "../components/ui/Button";
+import Badge from "../components/ui/Badge";
 
 type Role = "ADMIN" | "LEADER" | "MEMBER";
 
@@ -79,24 +81,25 @@ const members: Member[] = [
 ];
 
 const roleStyles: Record<Role, string> = {
-  ADMIN: "bg-primary text-white",
-  LEADER: "bg-secondary text-neutral",
-  MEMBER: "bg-tertiary text-white",
+  ADMIN: "!bg-primary !text-secondary",
+  LEADER: "!bg-secondary !text-neutral",
+  MEMBER: "!bg-tertiary !text-secondary",
 };
 
 function RoleBadge({ role }: { role: Role }) {
   return (
-    <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold tracking-wide ${roleStyles[role]}`}
+    <Badge
+      variant="default"
+      className={`px-3 py-1 text-xs font-semibold tracking-wide ${roleStyles[role]}`}
     >
       {role}
-    </span>
+    </Badge>
   );
 }
 
 function MemberAvatar({ initials }: { initials: string }) {
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-secondary">
       {initials}
     </div>
   );
@@ -195,11 +198,9 @@ const TeamMembers = () => {
 
   return (
     <div className="min-h-screen bg-paper text-neutral">
-      {/* Top bar */}
       <AppHeader pageTitle="Team Members" />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Breadcrumb */}
         <div className="mb-5 flex items-center gap-2 text-sm text-muted">
           <Link to="/dashboard" className="hover:text-primary">
             Dashboard
@@ -207,17 +208,16 @@ const TeamMembers = () => {
 
           <span>/</span>
 
-          <span className="font-semibold text-neutral">Team Members</span>
+          <span className="font-medium text-neutral">Team Members</span>
         </div>
 
-        {/* Page heading */}
         <section className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="mb-2 text-sm font-bold uppercase tracking-widest text-primary">
+            <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-primary">
               Workspace
             </p>
 
-            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+            <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
               Team Members
             </h1>
 
@@ -227,41 +227,53 @@ const TeamMembers = () => {
             </p>
           </div>
 
-          <button
-            type="button"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-tertiary sm:w-auto"
+          <Button
+            className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-white sm:w-auto"
           >
             <UserPlusIcon />
             Invite Member
-          </button>
+          </Button>
         </section>
 
-        {/* Stats */}
         <section className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <div className="rounded-2xl border border-line bg-panel p-5">
-            <p className="text-sm font-semibold text-muted">Total Members</p>
-            <p className="mt-2 text-3xl font-black">{members.length}</p>
+          <div className="rounded-xl border border-line bg-panel p-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              Total Members
+            </p>
+            <p className="font-display mt-2 text-3xl font-semibold">
+              {members.length}
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-line bg-panel p-5">
-            <p className="text-sm font-semibold text-muted">Admins</p>
-            <p className="mt-2 text-3xl font-black">{adminCount}</p>
+          <div className="rounded-xl border border-line bg-panel p-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              Admins
+            </p>
+            <p className="font-display mt-2 text-3xl font-semibold">
+              {adminCount}
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-line bg-panel p-5">
-            <p className="text-sm font-semibold text-muted">Leaders</p>
-            <p className="mt-2 text-3xl font-black">{leaderCount}</p>
+          <div className="rounded-xl border border-line bg-panel p-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              Leaders
+            </p>
+            <p className="font-display mt-2 text-3xl font-semibold">
+              {leaderCount}
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-line bg-panel p-5">
-            <p className="text-sm font-semibold text-muted">Members</p>
-            <p className="mt-2 text-3xl font-black">{memberCount}</p>
+          <div className="rounded-xl border border-line bg-panel p-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted">
+              Members
+            </p>
+            <p className="font-display mt-2 text-3xl font-semibold">
+              {memberCount}
+            </p>
           </div>
         </section>
 
-        {/* Main content */}
-        <section className="rounded-2xl border border-line bg-panel shadow-sm">
-          {/* Toolbar */}
+        <section className="rounded-xl border border-line bg-panel shadow-sm">
           <div className="flex flex-col gap-4 border-b border-line p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative w-full lg:max-w-md">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-muted">
@@ -273,7 +285,7 @@ const TeamMembers = () => {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search members, email or project..."
-                className="w-full rounded-xl border border-line bg-paper py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-muted/70 focus:border-primary focus:ring-2 focus:ring-primary/10"
+                className="w-full rounded-lg border border-line bg-paper py-3 pl-11 pr-4 text-sm outline-none transition placeholder:text-muted/70 focus:border-primary focus:ring-2 focus:ring-primary/10"
               />
             </div>
 
@@ -284,9 +296,9 @@ const TeamMembers = () => {
                     key={role}
                     type="button"
                     onClick={() => setRoleFilter(role)}
-                    className={`shrink-0 rounded-lg px-4 py-2.5 text-xs font-bold transition ${
+                    className={`shrink-0 rounded-lg px-4 py-2.5 text-xs font-medium transition ${
                       roleFilter === role
-                        ? "bg-primary text-white"
+                        ? "bg-primary text-secondary"
                         : "border border-line bg-paper text-muted hover:text-primary"
                     }`}
                   >
@@ -297,24 +309,23 @@ const TeamMembers = () => {
             </div>
           </div>
 
-          {/* Desktop table */}
           <div className="hidden overflow-x-auto lg:block">
             <table className="w-full min-w-0">
               <thead>
                 <tr className="border-b border-line bg-paper/60 text-left">
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">
+                  <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-muted">
                     Member
                   </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">
+                  <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-muted">
                     Role
                   </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">
+                  <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-muted">
                     Projects
                   </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">
+                  <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-muted">
                     Tasks
                   </th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">
+                  <th className="px-6 py-4 text-xs font-medium uppercase tracking-wider text-muted">
                     Joined
                   </th>
                   <th className="px-6 py-4" />
@@ -332,7 +343,7 @@ const TeamMembers = () => {
                         <MemberAvatar initials={member.avatar} />
 
                         <div>
-                          <p className="font-bold">{member.name}</p>
+                          <p className="font-medium">{member.name}</p>
                           <p className="mt-1 text-xs text-muted">
                             {member.email}
                           </p>
@@ -347,17 +358,18 @@ const TeamMembers = () => {
                     <td className="px-6 py-5">
                       <div className="flex flex-wrap gap-2">
                         {member.projects.map((project) => (
-                          <span
+                          <Badge
                             key={project}
-                            className="rounded-lg bg-secondary/60 px-2.5 py-1 text-xs font-semibold text-neutral"
+                            variant="default"
+                            className="rounded-lg px-2.5 py-1 text-xs font-medium text-neutral"
                           >
                             {project}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     </td>
 
-                    <td className="px-6 py-5 text-sm font-bold">
+                    <td className="px-6 py-5 text-sm font-medium">
                       {member.tasks}
                     </td>
 
@@ -380,19 +392,18 @@ const TeamMembers = () => {
             </table>
           </div>
 
-          {/* Mobile / tablet cards */}
           <div className="grid gap-4 p-4 lg:hidden">
             {filteredMembers.map((member) => (
               <article
                 key={member.id}
-                className="rounded-xl border border-line bg-paper p-4"
+                className="rounded-lg border border-line bg-paper p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <MemberAvatar initials={member.avatar} />
 
                     <div className="min-w-0">
-                      <h2 className="truncate font-bold">{member.name}</h2>
+                      <h2 className="truncate font-medium">{member.name}</h2>
                       <p className="truncate text-xs text-muted">
                         {member.email}
                       </p>
@@ -411,36 +422,35 @@ const TeamMembers = () => {
                 <div className="mt-4 flex items-center justify-between">
                   <RoleBadge role={member.role} />
 
-                  <span className="text-xs font-semibold text-muted">
+                  <span className="text-xs font-medium text-muted">
                     {member.tasks} tasks
                   </span>
                 </div>
 
                 <div className="mt-4">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted">
                     Projects
                   </p>
 
                   <div className="flex flex-wrap gap-2">
                     {member.projects.map((project) => (
-                      <span
+                      <Badge
                         key={project}
-                        className="rounded-lg bg-secondary/60 px-2.5 py-1 text-xs font-semibold"
+                        variant="default"
+                        className="rounded-lg px-2.5 py-1 text-xs font-medium text-neutral"
                       >
                         {project}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 </div>
 
                 <div className="mt-4 flex items-center justify-between border-t border-line pt-4 text-xs">
-                  <span className="text-muted">
-                    Joined {member.joined}
-                  </span>
+                  <span className="text-muted">Joined {member.joined}</span>
 
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1 font-bold text-primary"
+                    className="inline-flex items-center gap-1 font-medium text-primary"
                   >
                     View
                     <ArrowRightIcon />
@@ -450,14 +460,15 @@ const TeamMembers = () => {
             ))}
           </div>
 
-          {/* Empty state */}
           {filteredMembers.length === 0 && (
             <div className="px-6 py-16 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary text-primary">
                 <SearchIcon />
               </div>
 
-              <h2 className="mt-4 text-lg font-bold">No members found</h2>
+              <h2 className="mt-4 font-display text-lg font-semibold">
+                No members found
+              </h2>
 
               <p className="mt-2 text-sm text-muted">
                 Try changing your search or role filter.
@@ -466,11 +477,10 @@ const TeamMembers = () => {
           )}
         </section>
 
-        {/* Bottom information */}
-        <section className="mt-6 rounded-2xl border border-line bg-secondary/40 p-5 sm:p-6">
+        <section className="mt-6 rounded-xl border border-line bg-secondary/40 p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-bold">Manage your workspace</h2>
+              <h2 className="font-display font-semibold">Manage your workspace</h2>
 
               <p className="mt-1 text-sm leading-6 text-muted">
                 Assign roles carefully. Admins manage the workspace, leaders
@@ -480,7 +490,7 @@ const TeamMembers = () => {
 
             <Link
               to="/dashboard"
-              className="inline-flex shrink-0 items-center gap-2 text-sm font-bold text-primary hover:text-tertiary"
+              className="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-primary hover:text-tertiary"
             >
               Back to Dashboard
               <ArrowRightIcon />
@@ -490,6 +500,6 @@ const TeamMembers = () => {
       </main>
     </div>
   );
-}
+};
 
 export default TeamMembers;
