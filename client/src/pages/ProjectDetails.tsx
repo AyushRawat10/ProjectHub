@@ -1,5 +1,8 @@
 import { Link, useParams } from "react-router";
 import Sidebar from "../components/layouts/Sidebar";
+import Button from "../components/ui/Button";
+import AppHeader from "../components/layouts/AppHeader";
+import Badge from "../components/ui/Badge";
 
 const ProjectDetails = () => {
   const { projectId } = useParams();
@@ -30,69 +33,7 @@ const ProjectDetails = () => {
           TOP BAR
       ====================================================== */}
 
-      <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-          {/* Logo */}
-
-          <Link
-            to="/"
-            className="flex items-center gap-2 font-display text-lg font-semibold"
-          >
-            <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-            ProjectHub
-          </Link>
-
-          {/* Breadcrumb */}
-
-          <div className="hidden items-center gap-2 text-sm text-muted md:flex">
-            <Link
-              to="/projects"
-              className="hover:text-neutral"
-            >
-              Projects
-            </Link>
-
-            <ChevronRightIcon />
-
-            <span className="font-medium text-neutral">
-              {project.name}
-            </span>
-          </div>
-
-          {/* Search */}
-
-          <div className="hidden w-64 lg:block">
-            <div className="flex h-9 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-sm text-muted">
-              <SearchIcon />
-
-              <span>Search tasks, projects...</span>
-
-              <span className="ml-auto rounded border border-line px-1.5 py-0.5 text-[10px]">
-                ⌘K
-              </span>
-            </div>
-          </div>
-
-          {/* Account */}
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="hidden rounded-lg border border-line px-3 py-2 text-sm font-medium hover:bg-secondary/40 sm:block"
-            >
-              Invite Members
-            </button>
-
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-secondary"
-              aria-label="Account"
-            >
-              <UserIcon />
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader pageTitle={project.name} />
 
       {/* ======================================================
           APP LAYOUT
@@ -147,9 +88,9 @@ const ProjectDetails = () => {
                         {project.name}
                       </h1>
 
-                      <span className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-tertiary">
+                      <Badge variant="success">
                         Active
-                      </span>
+                      </Badge>
                     </div>
 
                     <p className="max-w-2xl text-sm leading-6 text-muted sm:text-base">
@@ -188,13 +129,10 @@ const ProjectDetails = () => {
                     Open Board
                   </Link>
 
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 rounded-lg border border-line bg-paper px-4 py-2.5 text-sm font-medium hover:bg-secondary/40"
-                  >
+                  <Button variant="outline">
                     <EditIcon />
                     Edit Project
-                  </button>
+                  </Button>
                 </div>
               </div>
             </section>
@@ -492,13 +430,13 @@ const ProjectDetails = () => {
                     />
                   </div>
 
-                  <button
-                    type="button"
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-secondary/50 py-2.5 text-sm font-medium text-tertiary hover:bg-secondary"
+                  <Button 
+                    variant="secondary"
+                    className="mt-5 w-full"
                   >
                     <PlusIcon />
                     Invite Member
-                  </button>
+                  </Button>
                 </section>
 
                 {/* Quick actions */}
@@ -511,27 +449,27 @@ const ProjectDetails = () => {
                   <div className="space-y-2">
                     <Link
                       to={`/projects/${project.id}/board`}
-                      className="flex items-center gap-3 rounded-lg bg-secondary/40 px-3 py-2.5 text-sm hover:bg-secondary"
+                      className="flex items-center gap-3 rounded-lg bg-secondary/40 px-3 py-2.5 text-sm hover:bg-secondary font-medium"
                     >
                       <BoardIcon />
                       Open Kanban Board
                     </Link>
 
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-3 rounded-lg bg-secondary/40 px-3 py-2.5 text-left text-sm hover:bg-secondary"
+                    <Button
+                      variant="secondary"
+                      className="w-full justify-start px-3 py-2.5 text-left"
                     >
                       <PlusIcon />
                       Create Task
-                    </button>
+                    </Button>
 
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-3 rounded-lg bg-secondary/40 px-3 py-2.5 text-left text-sm hover:bg-secondary"
+                    <Button
+                      variant="secondary"
+                      className="w-full justify-start px-3 py-2.5 text-left"
                     >
                       <UsersIcon />
                       Manage Members
-                    </button>
+                    </Button>
                   </div>
                 </section>
               </aside>
@@ -648,21 +586,17 @@ const PriorityBadge = ({
 }: {
   priority: string;
 }) => {
-  const styles = {
-    HIGH: "bg-red-50 text-red-600",
-    MEDIUM: "bg-secondary text-tertiary",
-    LOW: "bg-paper text-muted",
-  };
+  const variant = 
+    priority === "HIGH"
+      ? "danger"
+      : priority === "MEDIUM" 
+        ? "warning"
+        : "muted";
 
   return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-        styles[priority as keyof typeof styles] ??
-        "bg-paper text-muted"
-      }`}
-    >
+    <Badge variant={variant}>
       {priority}
-    </span>
+    </Badge>
   );
 };
 
@@ -775,32 +709,6 @@ const Member = ({
 /* ============================================================
    ICONS
    ============================================================ */
-
-const SearchIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-4 w-4 shrink-0"
-  >
-    <circle cx="11" cy="11" r="6.5" />
-    <path d="m16 16 5 5" />
-  </svg>
-);
-
-const UserIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-4 w-4"
-  >
-    <circle cx="12" cy="8" r="3.2" />
-    <path d="M5.5 20c.7-3.3 3.1-5 6.5-5s5.8 1.7 6.5 5" />
-  </svg>
-);
 
 const UserSmallIcon = () => (
   <svg
