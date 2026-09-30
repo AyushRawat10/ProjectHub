@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import Sidebar from "../components/layouts/Sidebar";
+import AppHeader from "../components/layouts/AppHeader";
+import Button from "../components/ui/Button";
+import Badge from "../components/ui/Badge";
 
 type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
 
@@ -167,78 +170,7 @@ const KanbanBoard = () => {
           TOP BAR
       ====================================================== */}
 
-      <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-          {/* Logo */}
-
-          <Link
-            to="/"
-            className="flex items-center gap-2 font-display text-lg font-semibold"
-          >
-            <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-            ProjectHub
-          </Link>
-
-          {/* Breadcrumb */}
-
-          <div className="hidden items-center gap-2 text-sm md:flex">
-            <Link
-              to="/projects"
-              className="text-muted hover:text-neutral"
-            >
-              Projects
-            </Link>
-
-            <ChevronRightIcon />
-
-            <Link
-              to={`/projects/${projectId}`}
-              className="text-muted hover:text-neutral"
-            >
-              {projectName}
-            </Link>
-
-            <ChevronRightIcon />
-
-            <span className="font-medium">
-              Board
-            </span>
-          </div>
-
-          {/* Search */}
-
-          <div className="hidden w-64 lg:block">
-            <div className="flex h-9 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-sm text-muted">
-              <SearchIcon />
-
-              <span>Search tasks...</span>
-
-              <span className="ml-auto rounded border border-line px-1.5 py-0.5 text-[10px]">
-                /
-              </span>
-            </div>
-          </div>
-
-          {/* Account */}
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="hidden rounded-lg border border-line px-3 py-2 text-sm font-medium hover:bg-secondary/40 sm:block"
-            >
-              Invite Members
-            </button>
-
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-secondary"
-              aria-label="Account"
-            >
-              <UserIcon />
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader pageTitle="Board" />
 
       {/* ======================================================
           APP LAYOUT
@@ -294,18 +226,21 @@ const KanbanBoard = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="hidden items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-sm sm:flex">
+                  <Badge
+                    variant="default"
+                    className="hidden items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-sm sm:flex"
+                  >
                     <span className="h-2 w-2 rounded-full bg-primary" />
                     Active Project
-                  </div>
+                  </Badge>
 
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-secondary hover:bg-tertiary"
+                  <Button
+                    variant="primary"
+                    className="px-4 py-2.5"
                   >
                     <PlusIcon />
                     New Task
-                  </button>
+                  </Button>
                 </div>
               </div>
             </section>
@@ -556,7 +491,7 @@ const TaskCard = ({
         {/* Assignee */}
 
         <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[9px] font-semibold text-tertiary"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-semibold text-secondary"
           title={task.assignee}
         >
           {task.initials}
@@ -627,19 +562,18 @@ const PriorityBadge = ({
 }: {
   priority: Task["priority"];
 }) => {
-  const styles = {
-    LOW: "bg-paper text-muted",
-    MEDIUM: "bg-secondary text-tertiary",
-    HIGH: "bg-secondary text-tertiary",
-    URGENT: "bg-secondary text-tertiary",
-  };
+  const variant = 
+    priority === "LOW"
+      ? "muted"
+      : "default";
 
   return (
-    <span
-      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${styles[priority]}`}
+    <Badge
+      variant={variant}
+      className="px-1.5 py-0.5 text-[10px]"
     >
       {priority}
-    </span>
+    </Badge>
   );
 };
 
@@ -657,19 +591,6 @@ const SearchIcon = () => (
   >
     <circle cx="11" cy="11" r="6.5" />
     <path d="m16 16 5 5" />
-  </svg>
-);
-
-const UserIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-4 w-4"
-  >
-    <circle cx="12" cy="8" r="3.2" />
-    <path d="M5.5 20c.7-3.3 3.1-5 6.5-5s5.8 1.7 6.5 5" />
   </svg>
 );
 
@@ -744,18 +665,6 @@ const PlusIcon = () => (
     className="h-4 w-4"
   >
     <path d="M12 5v14M5 12h14" />
-  </svg>
-);
-
-const ChevronRightIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-3.5 w-3.5"
-  >
-    <path d="m9 18 6-6-6-6" />
   </svg>
 );
 
