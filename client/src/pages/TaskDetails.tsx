@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import Sidebar from "../components/layouts/Sidebar";
+import AppHeader from "../components/layouts/AppHeader";
+import Badge from "../components/ui/Badge";
+import Button from "../components/ui/Button";
 
 type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
 
@@ -63,72 +66,7 @@ const TaskDetails = () => {
           TOP BAR
       ===================================================== */}
 
-      <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-          <Link
-            to="/"
-            className="flex items-center gap-2 font-display text-lg font-semibold"
-          >
-            <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-            ProjectHub
-          </Link>
-
-          <div className="hidden items-center gap-2 text-sm md:flex">
-            <Link
-              to="/projects"
-              className="text-muted hover:text-neutral"
-            >
-              Projects
-            </Link>
-
-            <ChevronRightIcon />
-
-            <Link
-              to={`/projects/${projectId ?? "projecthub"}`}
-              className="text-muted hover:text-neutral"
-            >
-              {projectName}
-            </Link>
-
-            <ChevronRightIcon />
-
-            <span className="font-medium">
-              Task
-            </span>
-          </div>
-
-          <div className="hidden w-64 lg:block">
-            <div className="flex h-9 items-center gap-2 rounded-lg border border-line bg-panel px-3 text-sm text-muted">
-              <SearchIcon />
-
-              <span>
-                Search tasks...
-              </span>
-
-              <span className="ml-auto rounded border border-line px-1.5 py-0.5 text-[10px]">
-                /
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="hidden rounded-lg border border-line px-3 py-2 text-sm font-medium hover:bg-secondary/40 sm:block"
-            >
-              Invite Members
-            </button>
-
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-secondary"
-              aria-label="Account"
-            >
-              <UserIcon />
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader pageTitle="Task" />
 
       {/* =====================================================
           APP LAYOUT
@@ -197,13 +135,13 @@ const TaskDetails = () => {
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      type="button"
-                      className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-medium hover:bg-secondary/40"
+                    <Button
+                      variant="outline"
+                      className="px-3 py-2"
                     >
                       <EditIcon />
                       Edit
-                    </button>
+                    </Button>
 
                     <button
                       type="button"
@@ -252,12 +190,12 @@ const TaskDetails = () => {
                       Description
                     </h2>
 
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-primary hover:text-tertiary"
+                    <Button
+                      variant="ghost"
+                      className="px-0 py-0 text-sm font-medium text-primary hover:bg-transparent hover:text-tertiary"
                     >
                       Edit
-                    </button>
+                    </Button>
                   </div>
 
                   <p className="max-w-3xl text-sm leading-7 text-muted">
@@ -319,13 +257,13 @@ const TaskDetails = () => {
                         />
 
                         <div className="mt-2 flex justify-end">
-                          <button
-                            type="button"
-                            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-secondary hover:bg-tertiary"
+                          <Button
+                            variant="primary"
+                            className="px-4 py-2"
                           >
                             Comment
                             <ArrowRightIcon />
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -434,26 +372,37 @@ const TaskDetails = () => {
                   </h2>
 
                   <div className="space-y-2">
-                    <ActionButton
-                      icon={<CheckSquareIcon />}
-                      label="Mark as complete"
-                    />
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start px-3 py-2.5 text-left"
+                    >
+                      <CheckSquareIcon />
+                      Mark as complete
+                    </Button>
 
-                    <ActionButton
-                      icon={<UserPlusIcon />}
-                      label="Change assignee"
-                    />
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start px-3 py-2.5 text-left"
+                    >
+                      <UserPlusIcon />
+                      Change assignee
+                    </Button>
 
-                    <ActionButton
-                      icon={<CalendarIcon />}
-                      label="Change due date"
-                    />
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start px-3 py-2.5 text-left"
+                    >
+                      <CalendarIcon />
+                      Change due date
+                    </Button>
 
-                    <ActionButton
-                      icon={<TrashIcon />}
-                      label="Delete task"
-                      danger
-                    />
+                    <Button
+                      variant="danger"
+                      className="w-full justify-start px-3 py-2.5 text-left"
+                    >
+                      <TrashIcon />
+                      Delete task
+                    </Button>
                   </div>
                 </section>
               </aside>
@@ -543,30 +492,6 @@ const CommentItem = ({
   );
 };
 
-const ActionButton = ({
-  icon,
-  label,
-  danger = false,
-}: {
-  icon: ReactNode;
-  label: string;
-  danger?: boolean;
-}) => {
-  return (
-    <button
-      type="button"
-      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${
-        danger
-          ? "text-red-600 hover:bg-red-50"
-          : "text-muted hover:bg-secondary/40 hover:text-neutral"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-};
-
 const StatusBadge = ({
   status,
 }: {
@@ -580,10 +505,10 @@ const StatusBadge = ({
   };
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2 py-1 text-[10px] font-medium text-tertiary">
+    <Badge variant="default" className="gap-1.5">
       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
       {labels[status]}
-    </span>
+    </Badge>
   );
 };
 
@@ -592,48 +517,25 @@ const PriorityBadge = ({
 }: {
   priority: Priority;
 }) => {
+  const variant = 
+    priority === "URGENT"
+      ? "danger"
+      : priority === "HIGH"
+        ? "danger"
+        : priority === "MEDIUM"
+          ? "warning"
+          : "muted";
+
   return (
-    <span
-      className={`rounded-full px-2 py-1 text-[10px] font-medium ${
-        priority === "URGENT"
-          ? "bg-secondary text-tertiary"
-          : "bg-paper text-muted"
-      }`}
-    >
+    <Badge variant={variant}>
       {priority}
-    </span>
+    </Badge>
   );
 };
 
 /* ============================================================
    ICONS
    ============================================================ */
-
-const SearchIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-4 w-4"
-  >
-    <circle cx="11" cy="11" r="6.5" />
-    <path d="m16 16 5 5" />
-  </svg>
-);
-
-const UserIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-4 w-4"
-  >
-    <circle cx="12" cy="8" r="3.2" />
-    <path d="M5.5 20c.7-3.3 3.1-5 6.5-5s5.8 1.7 6.5 5" />
-  </svg>
-);
 
 const CheckSquareIcon = () => (
   <svg
