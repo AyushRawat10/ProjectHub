@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import AppHeader from "../components/layouts/AppHeader";
 import Sidebar from "../components/layouts/Sidebar";
+import Badge from "../components/ui/Badge";
 
 type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
 type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -327,9 +328,12 @@ const MyTasks = () => {
                 </div>
 
                 {urgentTasks > 0 && (
-                  <span className="w-fit rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-tertiary">
+                  <Badge
+                    variant="default"
+                    className="w-fit px-2.5 py-1 text-[11px]"
+                  >
                     {urgentTasks} urgent
-                  </span>
+                  </Badge>
                 )}
               </div>
 
