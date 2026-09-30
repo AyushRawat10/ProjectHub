@@ -506,9 +506,12 @@ const ProjectTab = ({
       {label}
 
       {count !== undefined && (
-        <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px]">
+        <Badge
+          variant="default"
+          className="px-1.5 py-0.5 text-[10px]"
+        >
           {count}
-        </span>
+        </Badge>
       )}
     </button>
   );
@@ -606,11 +609,10 @@ const StatusBadge = ({
   status: string;
 }) => {
   return (
-    <span className="flex items-center gap-1.5">
+    <Badge variant="default" className="gap-1.5">
       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-
       {status}
-    </span>
+    </Badge>
   );
 };
 
@@ -683,7 +685,7 @@ const Member = ({
 }) => {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-tertiary">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-secondary">
         {initials}
       </div>
 
@@ -698,9 +700,12 @@ const Member = ({
       </div>
 
       {role === "Owner" && (
-        <span className="ml-auto rounded-full bg-secondary px-2 py-1 text-[10px] font-medium text-tertiary">
+        <Badge
+          variant="default"
+          className="ml-auto px-2 py-1 text-[10px]"
+        >
           Owner
-        </span>
+        </Badge>
       )}
     </div>
   );
