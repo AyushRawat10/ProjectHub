@@ -77,7 +77,15 @@ const TaskDetails = () => {
             SIDEBAR
         =================================================== */}
 
-        <Sidebar activePage="projects" project={{name: projectName, id: projectId ?? "projecthub", currentView: "task", taskTitle: task.title}} />
+        <Sidebar
+          activePage="projects"
+          project={{
+            name: projectName,
+            id: projectId ?? "projecthub",
+            currentView: "task",
+            taskTitle: task.title,
+          }}
+        />
 
         {/* ===================================================
             MAIN
@@ -88,10 +96,7 @@ const TaskDetails = () => {
             {/* Breadcrumb */}
 
             <div className="mb-5 flex flex-wrap items-center gap-2 text-sm text-muted">
-              <Link
-                to="/projects"
-                className="hover:text-neutral"
-              >
+              <Link to="/projects" className="hover:text-neutral">
                 Projects
               </Link>
 
@@ -106,9 +111,7 @@ const TaskDetails = () => {
 
               <ChevronRightIcon />
 
-              <span>
-                {task.id}
-              </span>
+              <span>{task.id}</span>
             </div>
 
             {/* =================================================
@@ -135,10 +138,7 @@ const TaskDetails = () => {
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
-                    <Button
-                      variant="outline"
-                      className="px-3 py-2"
-                    >
+                    <Button variant="outline" className="px-3 py-2">
                       <EditIcon />
                       Edit
                     </Button>
@@ -234,10 +234,7 @@ const TaskDetails = () => {
 
                   <div className="space-y-5">
                     {comments.map((comment) => (
-                      <CommentItem
-                        key={comment.id}
-                        comment={comment}
-                      />
+                      <CommentItem key={comment.id} comment={comment} />
                     ))}
                   </div>
 
@@ -257,10 +254,7 @@ const TaskDetails = () => {
                         />
 
                         <div className="mt-2 flex justify-end">
-                          <Button
-                            variant="primary"
-                            className="px-4 py-2"
-                          >
+                          <Button variant="primary" className="px-4 py-2">
                             Comment
                             <ArrowRightIcon />
                           </Button>
@@ -355,9 +349,7 @@ const TaskDetails = () => {
                         {projectName}
                       </p>
 
-                      <p className="text-xs text-muted">
-                        Project workspace
-                      </p>
+                      <p className="text-xs text-muted">Project workspace</p>
                     </div>
 
                     <ChevronRightIcon />
@@ -418,51 +410,29 @@ const TaskDetails = () => {
    COMPONENTS
    ============================================================ */
 
-const DetailItem = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: ReactNode;
-}) => {
+const DetailItem = ({ label, value }: { label: string; value: ReactNode }) => {
   return (
     <div className="flex items-start justify-between gap-4">
-      <span className="text-sm text-muted">
-        {label}
-      </span>
+      <span className="text-sm text-muted">{label}</span>
 
-      <div className="text-right">
-        {value}
-      </div>
+      <div className="text-right">{value}</div>
     </div>
   );
 };
 
-const Person = ({
-  initials,
-  name,
-}: {
-  initials: string;
-  name: string;
-}) => {
+const Person = ({ initials, name }: { initials: string; name: string }) => {
   return (
     <div className="flex items-center gap-2">
       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-[9px] font-semibold text-tertiary">
         {initials}
       </span>
 
-      <span className="max-w-28 truncate text-sm font-medium">
-        {name}
-      </span>
+      <span className="max-w-28 truncate text-sm font-medium">{name}</span>
     </div>
   );
 };
 
-const CommentItem = ({
-  comment,
-}: {
-  comment: Comment;
-}) => {
+const CommentItem = ({ comment }: { comment: Comment }) => {
   return (
     <article className="flex gap-3">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-tertiary">
@@ -471,32 +441,20 @@ const CommentItem = ({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-sm font-semibold">
-            {comment.name}
-          </span>
+          <span className="text-sm font-semibold">{comment.name}</span>
 
-          <span className="text-xs text-muted">
-            {comment.role}
-          </span>
+          <span className="text-xs text-muted">{comment.role}</span>
 
-          <span className="text-xs text-muted">
-            • {comment.time}
-          </span>
+          <span className="text-xs text-muted">• {comment.time}</span>
         </div>
 
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {comment.message}
-        </p>
+        <p className="mt-2 text-sm leading-6 text-muted">{comment.message}</p>
       </div>
     </article>
   );
 };
 
-const StatusBadge = ({
-  status,
-}: {
-  status: TaskStatus;
-}) => {
+const StatusBadge = ({ status }: { status: TaskStatus }) => {
   const labels: Record<TaskStatus, string> = {
     TODO: "Todo",
     IN_PROGRESS: "In Progress",
@@ -512,12 +470,8 @@ const StatusBadge = ({
   );
 };
 
-const PriorityBadge = ({
-  priority,
-}: {
-  priority: Priority;
-}) => {
-  const variant = 
+const PriorityBadge = ({ priority }: { priority: Priority }) => {
+  const variant =
     priority === "URGENT"
       ? "danger"
       : priority === "HIGH"
@@ -526,11 +480,7 @@ const PriorityBadge = ({
           ? "warning"
           : "muted";
 
-  return (
-    <Badge variant={variant}>
-      {priority}
-    </Badge>
-  );
+  return <Badge variant={variant}>{priority}</Badge>;
 };
 
 /* ============================================================
@@ -614,11 +564,7 @@ const ChevronRightIcon = () => (
 );
 
 const MoreIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className="h-4 w-4"
-  >
+  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
     <circle cx="5" cy="12" r="1.5" />
     <circle cx="12" cy="12" r="1.5" />
     <circle cx="19" cy="12" r="1.5" />

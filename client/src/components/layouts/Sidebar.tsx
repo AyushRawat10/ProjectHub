@@ -481,32 +481,32 @@ export default function Sidebar({
 
                 {/* Child Navigation */}
                 <div className="mt-2 border-t border-line/70 pt-2">
-                {project.currentView === "overview" && (
-                    <ProjectContextItem
-                    icon={<GridIcon />}
-                    label="Overview"
-                    to={`/projects/${project.id}`}
-                    active
-                    />
-                )}
+                  {project.currentView === "overview" && (
+                      <ProjectContextItem
+                      icon={<GridIcon />}
+                      label="Overview"
+                      to={`/projects/${project.id}`}
+                      active
+                      />
+                  )}
 
-                {project.currentView === "board" && (
-                    <ProjectContextItem
-                    icon={<BoardIcon />}
-                    label="Kanban Board"
-                    to={`/projects/${project.id}/board`}
-                    active
-                    />
-                )}
+                  {project.currentView === "board" && (
+                      <ProjectContextItem
+                      icon={<BoardIcon />}
+                      label="Kanban Board"
+                      to={`/projects/${project.id}/board`}
+                      active
+                      />
+                  )}
 
-                {project.currentView === "task" && (
-                    <ProjectContextItem
-                    icon={<CheckSquareIcon />}
-                    label={project.taskTitle ?? "Task Details"}
-                    to={location.pathname}
-                    active
-                    />
-                )}
+                  {project.currentView === "task" && (
+                      <ProjectContextItem
+                      icon={<CheckSquareIcon />}
+                      label={project.taskTitle ?? "Task Details"}
+                      to={location.pathname}
+                      active
+                      />
+                  )}
                 </div>
               </div>
             </>

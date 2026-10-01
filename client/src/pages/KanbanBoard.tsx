@@ -181,7 +181,14 @@ const KanbanBoard = () => {
             SIDEBAR
         ==================================================== */}
 
-        <Sidebar activePage="projects" project={{name: project.name, id: project.id, currentView: "board"}} />
+        <Sidebar
+          activePage="projects"
+          project={{ 
+            name: project.name, 
+            id: project.id, 
+            currentView: "board" 
+          }}
+        />
 
         {/* ====================================================
             MAIN
@@ -219,9 +226,7 @@ const KanbanBoard = () => {
 
                     <span>•</span>
 
-                    <span>
-                      {tasks.length} tasks
-                    </span>
+                    <span>{tasks.length} tasks</span>
                   </div>
                 </div>
 
@@ -234,10 +239,7 @@ const KanbanBoard = () => {
                     Active Project
                   </Badge>
 
-                  <Button
-                    variant="primary"
-                    className="px-4 py-2.5"
-                  >
+                  <Button variant="primary" className="px-4 py-2.5">
                     <PlusIcon />
                     New Task
                   </Button>
@@ -255,9 +257,7 @@ const KanbanBoard = () => {
               <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-paper px-3 text-sm text-muted sm:max-w-md">
                 <SearchIcon />
 
-                <span className="truncate">
-                  Search project tasks...
-                </span>
+                <span className="truncate">Search project tasks...</span>
 
                 <span className="ml-auto shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px]">
                   /
@@ -267,28 +267,17 @@ const KanbanBoard = () => {
               {/* Filters */}
 
               <div className="flex items-center gap-2 overflow-x-auto">
-                <FilterButton
-                  icon={<FilterIcon />}
-                  label="Filter"
-                />
+                <FilterButton icon={<FilterIcon />} label="Filter" />
 
-                <FilterButton
-                  label="Priority"
-                  dropdown
-                />
+                <FilterButton label="Priority" dropdown />
 
-                <FilterButton
-                  label="Assignee"
-                  dropdown
-                />
+                <FilterButton label="Assignee" dropdown />
               </div>
 
               <div className="hidden h-6 w-px bg-line xl:block" />
 
               <div className="hidden items-center gap-2 text-xs text-muted xl:flex">
-                <span>
-                  Group by:
-                </span>
+                <span>Group by:</span>
 
                 <button
                   type="button"
@@ -297,13 +286,9 @@ const KanbanBoard = () => {
                   Status⌄
                 </button>
 
-                <span className="text-line">
-                  |
-                </span>
+                <span className="text-line">|</span>
 
-                <span>
-                  Sort:
-                </span>
+                <span>Sort:</span>
 
                 <button
                   type="button"
@@ -321,9 +306,7 @@ const KanbanBoard = () => {
             <section className="overflow-x-auto pb-5">
               <div className="grid min-w-[72rem] grid-cols-4 gap-4">
                 {columnConfig.map((column) => {
-                  const columnTasks = getTasksByStatus(
-                    column.status,
-                  );
+                  const columnTasks = getTasksByStatus(column.status);
 
                   return (
                     <KanbanColumn
@@ -370,11 +353,7 @@ type KanbanColumnProps = {
   tasks: Task[];
 };
 
-const KanbanColumn = ({
-  status,
-  label,
-  tasks,
-}: KanbanColumnProps) => {
+const KanbanColumn = ({ status, label, tasks }: KanbanColumnProps) => {
   return (
     <div className="min-w-72 rounded-xl bg-secondary/35 p-2.5">
       {/* Column header */}
@@ -383,13 +362,9 @@ const KanbanColumn = ({
         <div className="flex items-center gap-2">
           <StatusDot status={status} />
 
-          <h2 className="text-sm font-semibold">
-            {label}
-          </h2>
+          <h2 className="text-sm font-semibold">{label}</h2>
 
-          <span className="text-xs font-medium text-muted">
-            {tasks.length}
-          </span>
+          <span className="text-xs font-medium text-muted">{tasks.length}</span>
         </div>
 
         <button
@@ -405,10 +380,7 @@ const KanbanColumn = ({
 
       <div className="space-y-2.5">
         {tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-          />
+          <TaskCard key={task.id} task={task} />
         ))}
       </div>
 
@@ -429,11 +401,7 @@ const KanbanColumn = ({
    TASK CARD
    ============================================================ */
 
-const TaskCard = ({
-  task,
-}: {
-  task: Task;
-}) => {
+const TaskCard = ({ task }: { task: Task }) => {
   return (
     <Link
       to="#"
@@ -451,9 +419,7 @@ const TaskCard = ({
 
       {/* Title */}
 
-      <h3 className="text-sm font-medium leading-5">
-        {task.title}
-      </h3>
+      <h3 className="text-sm font-medium leading-5">{task.title}</h3>
 
       {/* Meta */}
 
@@ -462,8 +428,7 @@ const TaskCard = ({
           {task.dueDate && (
             <span
               className={`flex items-center gap-1 ${
-                task.status !== "DONE" &&
-                task.priority === "URGENT"
+                task.status !== "DONE" && task.priority === "URGENT"
                   ? "text-red-600"
                   : ""
               }`}
@@ -523,9 +488,7 @@ const FilterButton = ({
 
       {label}
 
-      {dropdown && (
-        <ChevronDownIcon />
-      )}
+      {dropdown && <ChevronDownIcon />}
     </button>
   );
 };
@@ -534,11 +497,7 @@ const FilterButton = ({
    STATUS
    ============================================================ */
 
-const StatusDot = ({
-  status,
-}: {
-  status: TaskStatus;
-}) => {
+const StatusDot = ({ status }: { status: TaskStatus }) => {
   const dotClass = {
     TODO: "bg-muted",
     IN_PROGRESS: "bg-primary",
@@ -546,32 +505,18 @@ const StatusDot = ({
     DONE: "bg-primary",
   };
 
-  return (
-    <span
-      className={`h-2 w-2 rounded-full ${dotClass[status]}`}
-    />
-  );
+  return <span className={`h-2 w-2 rounded-full ${dotClass[status]}`} />;
 };
 
 /* ============================================================
    PRIORITY
    ============================================================ */
 
-const PriorityBadge = ({
-  priority,
-}: {
-  priority: Task["priority"];
-}) => {
-  const variant = 
-    priority === "LOW"
-      ? "muted"
-      : "default";
+const PriorityBadge = ({ priority }: { priority: Task["priority"] }) => {
+  const variant = priority === "LOW" ? "muted" : "default";
 
   return (
-    <Badge
-      variant={variant}
-      className="px-1.5 py-0.5 text-[10px]"
-    >
+    <Badge variant={variant} className="px-1.5 py-0.5 text-[10px]">
       {priority}
     </Badge>
   );

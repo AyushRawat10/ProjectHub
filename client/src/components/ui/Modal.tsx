@@ -29,14 +29,12 @@ export default function Modal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
     >
       {/* Overlay */}
-      <div className="absolute inset-0 bg-neutral/40 backdrop-blur-[2px]" />
+      <div 
+        className="absolute inset-0 bg-neutral/40 backdrop-blur-[2px]" 
+        onMouseDown={onClose}
+      />
 
       {/* Modal */}
       <div

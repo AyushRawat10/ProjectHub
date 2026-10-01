@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import AppHeader from "../components/layouts/AppHeader";
 import Sidebar from "../components/layouts/Sidebar";
 import StatCard from "../components/ui/StatCard";
+import Button from "../components/ui/Button";
 
 const Dashboard = () => {
   return (
@@ -58,13 +59,10 @@ const Dashboard = () => {
                     New Project
                   </Link>
 
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 rounded-lg border border-line bg-panel px-4 py-2.5 text-sm font-medium transition-colors hover:bg-secondary/40"
-                  >
+                  <Button variant="outline">
                     <FilterIcon />
                     Customize
-                  </button>
+                  </Button>
                 </div>
               </div>
             </section>

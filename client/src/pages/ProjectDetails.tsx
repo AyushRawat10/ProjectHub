@@ -44,7 +44,14 @@ const ProjectDetails = () => {
             SIDEBAR
         ==================================================== */}
 
-        <Sidebar activePage="projects" project={{name: project.name, id: project.id, currentView: "overview"}}/>
+        <Sidebar
+          activePage="projects"
+          project={{
+            name: project.name,
+            id: project.id,
+            currentView: "overview",
+          }}
+        />
 
         {/* ====================================================
             MAIN
@@ -55,18 +62,13 @@ const ProjectDetails = () => {
             {/* Mobile breadcrumb */}
 
             <div className="mb-5 flex items-center gap-2 text-sm text-muted lg:hidden">
-              <Link
-                to="/projects"
-                className="hover:text-neutral"
-              >
+              <Link to="/projects" className="hover:text-neutral">
                 Projects
               </Link>
 
               <ChevronRightIcon />
 
-              <span className="font-medium text-neutral">
-                {project.name}
-              </span>
+              <span className="font-medium text-neutral">{project.name}</span>
             </div>
 
             {/* ==================================================
@@ -88,9 +90,7 @@ const ProjectDetails = () => {
                         {project.name}
                       </h1>
 
-                      <Badge variant="success">
-                        Active
-                      </Badge>
+                      <Badge variant="success">Active</Badge>
                     </div>
 
                     <p className="max-w-2xl text-sm leading-6 text-muted sm:text-base">
@@ -111,9 +111,7 @@ const ProjectDetails = () => {
                         {project.members} members
                       </span>
 
-                      <span className="font-mono">
-                        {project.id}
-                      </span>
+                      <span className="font-mono">{project.id}</span>
                     </div>
                   </div>
                 </div>
@@ -142,10 +140,7 @@ const ProjectDetails = () => {
             ================================================== */}
 
             <nav className="my-5 flex gap-1 overflow-x-auto border-b border-line">
-              <ProjectTab
-                label="Overview"
-                active
-              />
+              <ProjectTab label="Overview" active />
 
               <Link
                 to={`/projects/${project.id}/board`}
@@ -155,10 +150,7 @@ const ProjectDetails = () => {
                 Board
               </Link>
 
-              <ProjectTab
-                label="Members"
-                count={project.members}
-              />
+              <ProjectTab label="Members" count={project.members} />
             </nav>
 
             {/* ==================================================
@@ -360,15 +352,9 @@ const ProjectDetails = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <DetailRow
-                      label="Status"
-                      value="Active"
-                    />
+                    <DetailRow label="Status" value="Active" />
 
-                    <DetailRow
-                      label="Owner"
-                      value={project.owner}
-                    />
+                    <DetailRow label="Owner" value={project.owner} />
 
                     <DetailRow
                       label="Total Tasks"
@@ -380,11 +366,7 @@ const ProjectDetails = () => {
                       value={String(project.members)}
                     />
 
-                    <DetailRow
-                      label="Project ID"
-                      value={project.id}
-                      mono
-                    />
+                    <DetailRow label="Project ID" value={project.id} mono />
                   </div>
                 </section>
 
@@ -392,9 +374,7 @@ const ProjectDetails = () => {
 
                 <section className="rounded-xl border border-line bg-panel p-5">
                   <div className="mb-5 flex items-center justify-between">
-                    <h2 className="font-display text-lg font-semibold">
-                      Team
-                    </h2>
+                    <h2 className="font-display text-lg font-semibold">Team</h2>
 
                     <button
                       type="button"
@@ -405,35 +385,16 @@ const ProjectDetails = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <Member
-                      initials="AR"
-                      name="Ayush Rawat"
-                      role="Owner"
-                    />
+                    <Member initials="AR" name="Ayush Rawat" role="Owner" />
 
-                    <Member
-                      initials="RK"
-                      name="Rahul Kumar"
-                      role="Leader"
-                    />
+                    <Member initials="RK" name="Rahul Kumar" role="Leader" />
 
-                    <Member
-                      initials="AS"
-                      name="Ankit Sharma"
-                      role="Member"
-                    />
+                    <Member initials="AS" name="Ankit Sharma" role="Member" />
 
-                    <Member
-                      initials="PS"
-                      name="Priya Singh"
-                      role="Member"
-                    />
+                    <Member initials="PS" name="Priya Singh" role="Member" />
                   </div>
 
-                  <Button 
-                    variant="secondary"
-                    className="mt-5 w-full"
-                  >
+                  <Button variant="secondary" className="mt-5 w-full">
                     <PlusIcon />
                     Invite Member
                   </Button>
@@ -506,10 +467,7 @@ const ProjectTab = ({
       {label}
 
       {count !== undefined && (
-        <Badge
-          variant="default"
-          className="px-1.5 py-0.5 text-[10px]"
-        >
+        <Badge variant="default" className="px-1.5 py-0.5 text-[10px]">
           {count}
         </Badge>
       )}
@@ -531,14 +489,10 @@ const ProgressStat = ({
       <div className="mb-1 flex items-center gap-2">
         <span className={`h-2 w-2 rounded-full ${dot}`} />
 
-        <span className="text-xs text-muted">
-          {label}
-        </span>
+        <span className="text-xs text-muted">{label}</span>
       </div>
 
-      <span className="font-display text-xl font-semibold">
-        {value}
-      </span>
+      <span className="font-display text-xl font-semibold">{value}</span>
     </div>
   );
 };
@@ -570,9 +524,7 @@ const TaskPreview = ({
           <PriorityBadge priority={priority} />
         </div>
 
-        <p className="truncate text-sm font-medium">
-          {title}
-        </p>
+        <p className="truncate text-sm font-medium">{title}</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-4 text-xs text-muted">
@@ -584,30 +536,18 @@ const TaskPreview = ({
   );
 };
 
-const PriorityBadge = ({
-  priority,
-}: {
-  priority: string;
-}) => {
-  const variant = 
+const PriorityBadge = ({ priority }: { priority: string }) => {
+  const variant =
     priority === "HIGH"
       ? "danger"
-      : priority === "MEDIUM" 
+      : priority === "MEDIUM"
         ? "warning"
         : "muted";
 
-  return (
-    <Badge variant={variant}>
-      {priority}
-    </Badge>
-  );
+  return <Badge variant={variant}>{priority}</Badge>;
 };
 
-const StatusBadge = ({
-  status,
-}: {
-  status: string;
-}) => {
+const StatusBadge = ({ status }: { status: string }) => {
   return (
     <Badge variant="default" className="gap-1.5">
       <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -634,15 +574,11 @@ const ActivityItem = ({
       <div className="text-sm leading-5">
         <p className="text-muted">
           {text}{" "}
-          <strong className="font-medium text-neutral">
-            {highlight}
-          </strong>{" "}
+          <strong className="font-medium text-neutral">{highlight}</strong>{" "}
           {suffix}
         </p>
 
-        <p className="mt-1 text-xs text-muted">
-          {time}
-        </p>
+        <p className="mt-1 text-xs text-muted">{time}</p>
       </div>
     </div>
   );
@@ -659,9 +595,7 @@ const DetailRow = ({
 }) => {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-sm text-muted">
-        {label}
-      </span>
+      <span className="text-sm text-muted">{label}</span>
 
       <span
         className={`text-right text-sm font-medium ${
@@ -690,20 +624,13 @@ const Member = ({
       </div>
 
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">
-          {name}
-        </p>
+        <p className="truncate text-sm font-medium">{name}</p>
 
-        <p className="text-xs text-muted">
-          {role}
-        </p>
+        <p className="text-xs text-muted">{role}</p>
       </div>
 
       {role === "Owner" && (
-        <Badge
-          variant="default"
-          className="ml-auto px-2 py-1 text-[10px]"
-        >
+        <Badge variant="default" className="ml-auto px-2 py-1 text-[10px]">
           Owner
         </Badge>
       )}
@@ -794,11 +721,7 @@ const ChevronRightIcon = () => (
 );
 
 const MoreIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className="h-4 w-4"
-  >
+  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
     <circle cx="5" cy="12" r="1.5" />
     <circle cx="12" cy="12" r="1.5" />
     <circle cx="19" cy="12" r="1.5" />
