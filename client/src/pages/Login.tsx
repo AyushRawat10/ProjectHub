@@ -1,6 +1,42 @@
 import { Link } from "react-router";
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
+  const {login} = useAuth();
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      await login({
+        email,
+        password,
+      });
+
+      navigate("/dashboard");
+    } catch (error: any) {
+      setError(
+        error.response?.data?.message ||
+          "Unable to login. Please check your credentials."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-paper text-neutral">
       {/* ==================== HEADER ==================== */}
@@ -78,7 +114,10 @@ const Login = () => {
             </div>
 
             {/* ==================== FORM ==================== */}
-            <form className="space-y-5">
+            <form 
+              className="space-y-5"
+              onSubmit={handleSubmit}
+            >
               {/* Email */}
               <div>
                 <div className="mb-2 flex items-center justify-between">
@@ -101,6 +140,8 @@ const Login = () => {
 
                   <input
                     id="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
                     name="email"
                     type="email"
                     autoComplete="email"
@@ -135,6 +176,8 @@ const Login = () => {
 
                   <input
                     id="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
                     name="password"
                     type="password"
                     autoComplete="current-password"
@@ -161,11 +204,17 @@ const Login = () => {
               </div>
 
               {/* Submit */}
+              {error && (
+                <p className="text-sm text-red-600">
+                  {error}
+                </p>
+              )}
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-secondary transition-colors hover:bg-tertiary"
               >
-                Sign in to ProjectHub
+                {isSubmitting ? "Signing in..." : "Sign in to ProjectHub"}
 
                 <ArrowRightIcon />
               </button>
