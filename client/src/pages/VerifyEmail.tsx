@@ -1,8 +1,50 @@
 import { useRef, type ChangeEvent, type KeyboardEvent } from "react";
 import { Link } from "react-router";
+import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router";
+import { verifyEmail, resendVerification } from "../services/auth.service";
 
 const VerifyEmail = () => {
   const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const email = searchParams.get("email") ?? "";
+  
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    setError("");
+    setSuccess("");
+    setIsSubmitting(true);
+
+    try {
+      await verifyEmail({
+        email,
+        code: otp,
+      });
+
+      setSuccess("Email verified successfully.");
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
+    } catch (error: any) {
+      setError(
+        error.response?.data?.message ||
+          "Invalid or expired verification code."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleOtpChange = (
     index: number,
@@ -10,13 +52,20 @@ const VerifyEmail = () => {
   ) => {
     const value = event.target.value;
 
-    if (!/^\d*$/.test(value)) {
+    if (!/^\d*$/.test(value) || value.length > 1) {
       return;
     }
 
-    if (value.length > 1) {
-      return;
-    }
+    const otpArray = otp.split("");
+    
+    otpArray[index] = value;
+
+    const nextOtp = otpArray
+      .slice(0, 6)
+      .map((digit) => digit || "")
+      .join("");
+
+    setOtp(nextOtp);
 
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
@@ -29,6 +78,30 @@ const VerifyEmail = () => {
   ) => {
     if (event.key === "Backspace" && !event.currentTarget.value && index > 0) {
       otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email) {
+      setError("Email address is missing.");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setIsResending(true);
+
+    try {
+      await resendVerification({ email });
+
+      setSuccess("A new verification code has been sent.");
+    } catch (error: any) {
+      setError(
+        error.response?.data?.message ||
+          "Unable to resend the verification code."
+      );
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -113,7 +186,7 @@ const VerifyEmail = () => {
 
               {/* Email */}
               <div className="mt-3 inline-flex items-center rounded-md bg-secondary/50 px-2.5 py-1 text-sm font-medium text-tertiary">
-                alex.chen@example.com
+                {email || "your email address"}
               </div>
 
               {/* Change email */}
@@ -129,7 +202,22 @@ const VerifyEmail = () => {
             </div>
 
             {/* ==================== OTP ==================== */}
-            <div>
+            {error && (
+              <p className="mb-4 text-sm text-red-600">
+                {error}
+              </p>
+            )}
+
+            {success && (
+              <p className="mb-4 text-sm text-primary">
+                {success}
+              </p>
+            )}
+
+            <form 
+              onSubmit={handleSubmit}
+            >
+              <div>
               <div className="mb-2 flex items-center justify-between">
                 <label className="text-sm font-medium tracking-wide">
                   Verification code
@@ -146,6 +234,7 @@ const VerifyEmail = () => {
                       otpRefs.current[index] = element;
                     }}
                     type="text"
+                    value={otp[index] ?? ""}
                     inputMode="numeric"
                     maxLength={1}
                     autoComplete={index === 0 ? "one-time-code" : "off"}
@@ -165,16 +254,18 @@ const VerifyEmail = () => {
 
                 <span>6 digits required</span>
               </div>
-            </div>
+              </div>
 
-            {/* ==================== VERIFY BUTTON ==================== */}
-            <button
-              type="button"
-              className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-secondary transition-colors hover:bg-tertiary"
-            >
-              Verify Email & Continue
-              <ArrowRightIcon />
-            </button>
+              {/* ==================== VERIFY BUTTON ==================== */}
+              <button
+                type="submit"
+                disabled={isSubmitting || otp.length !== 6 || !email}
+                className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-secondary transition-colors hover:bg-tertiary"
+              >
+                {isSubmitting ? "Verifying..." : "Verify Email & Continue"}
+                <ArrowRightIcon />
+              </button>
+            </form>
 
             {/* ==================== RESEND ==================== */}
             <div className="mt-6 border-t border-line pt-5">
@@ -183,9 +274,11 @@ const VerifyEmail = () => {
 
                 <button
                   type="button"
+                  onClick={handleResend}
+                  disabled={isResending}
                   className="mt-1 text-sm font-semibold text-primary hover:underline"
                 >
-                  Resend verification code
+                  {isResending ? "Sending..." : "Resend verification code"}
                 </button>
               </div>
 

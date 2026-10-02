@@ -13,7 +13,7 @@ export type LoginData = {
 
 export type VerifyEmailData = {
     email: string;
-    otp: string;
+    code: string;
 };
 
 export type ResendVerificationData = {

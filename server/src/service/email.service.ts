@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 })
 
 export const sendVerificationEmail = async (email: string, verificationCode: string) => {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
         from: `ProjectHub <${process.env.GMAIL_USER}>`,
         to: email,
         subject: "Verify your ProjectHub email",

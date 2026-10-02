@@ -79,6 +79,7 @@ export const registerController = async (req: Request, res: Response) => {
 
 	try {
 		await sendVerificationEmail( email, verificationCode );
+		console.log("Verification email sent successfully to:", email);
 	} catch (error) {
 		console.error("Failed to send verification email:", error);
 
