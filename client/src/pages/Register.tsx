@@ -1,6 +1,42 @@
 import { Link } from "react-router";
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { register } from "../services/auth.service";
 
 const Register = () => {
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      await register({
+        name,
+        email,
+        password,
+      });
+
+      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+    } catch (error: any) {
+      setError(
+        error.response?.data?.message ||
+          "Unable to create your account. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-paper text-neutral">
       {/* ==================== HEADER ==================== */}
@@ -79,7 +115,10 @@ const Register = () => {
               </div>
 
               {/* ==================== FORM ==================== */}
-              <form className="space-y-5">
+              <form 
+                className="space-y-5"
+                onSubmit={handleSubmit}
+              >
                 {/* Full Name */}
                 <div>
                   <div className="mb-2 flex items-center justify-between">
@@ -102,6 +141,8 @@ const Register = () => {
 
                     <input
                       id="name"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
                       name="name"
                       type="text"
                       autoComplete="name"
@@ -133,6 +174,8 @@ const Register = () => {
 
                     <input
                       id="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
                       name="email"
                       type="email"
                       autoComplete="email"
@@ -164,6 +207,8 @@ const Register = () => {
 
                     <input
                       id="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
                       name="password"
                       type="password"
                       autoComplete="new-password"
@@ -216,11 +261,17 @@ const Register = () => {
                 </p>
 
                 {/* Submit */}
+                {error && (
+                  <p className="text-sm text-red-600">
+                    {error}
+                  </p>
+                )}
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-secondary transition-colors hover:bg-tertiary"
                 >
-                  Create ProjectHub Account
+                  {isSubmitting ? "Creating account..." : "Create ProjectHub Account"}
 
                   <ArrowRightIcon />
                 </button>
