@@ -1,82 +1,34 @@
 import { Link } from "react-router";
+import { useState, useEffect } from "react";
 import AppHeader from "../components/layouts/AppHeader";
 import Sidebar from "../components/layouts/Sidebar";
 import Badge from "../components/ui/Badge";
-
-type Project = {
-  id: string;
-  name: string;
-  description: string;
-  tasks: number;
-  members: number;
-  progress: number;
-  color: string;
-};
-
-const projects: Project[] = [
-  {
-    id: "PRJ-01",
-    name: "ProjectHub",
-    description:
-      "Project management workspace for development teams, tasks, members, and comments.",
-    tasks: 14,
-    members: 4,
-    progress: 78,
-    color: "bg-primary",
-  },
-  {
-    id: "PRJ-02",
-    name: "DevPulse",
-    description:
-      "Developer-focused news and information platform for discovering useful technical content.",
-    tasks: 22,
-    members: 3,
-    progress: 45,
-    color: "bg-secondary",
-  },
-  {
-    id: "PRJ-03",
-    name: "Portfolio",
-    description:
-      "Personal portfolio website showcasing projects, skills, experience, and development work.",
-    tasks: 8,
-    members: 2,
-    progress: 92,
-    color: "bg-muted",
-  },
-  {
-    id: "PRJ-04",
-    name: "Game Studio",
-    description:
-      "Experimental game development project for building gameplay systems and prototypes.",
-    tasks: 16,
-    members: 3,
-    progress: 30,
-    color: "bg-primary",
-  },
-  {
-    id: "PRJ-05",
-    name: "Developer Tools",
-    description:
-      "Collection of small tools designed to improve everyday developer workflows.",
-    tasks: 11,
-    members: 3,
-    progress: 65,
-    color: "bg-secondary",
-  },
-  {
-    id: "PRJ-06",
-    name: "Design System",
-    description:
-      "Reusable UI components and design guidelines for ProjectHub applications.",
-    tasks: 19,
-    members: 4,
-    progress: 88,
-    color: "bg-primary",
-  },
-];
+import { getProjects, type Project } from "../services/project.service";
 
 const Projects = () => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getProjects();
+
+        setProjects(data);
+      } catch {
+        setError("Failed to load projects.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProjects();
+  }, []);
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-paper text-neutral">
       {/* ==================== TOP BAR ==================== */}
@@ -116,7 +68,7 @@ const Projects = () => {
                       variant="default"
                       className="px-2.5 py-1 text-xs"
                     >
-                      {projects.length} active
+                      {projects.length} total
                     </Badge>
                   </div>
 
@@ -158,18 +110,8 @@ const Projects = () => {
               <div className="flex overflow-x-auto rounded-lg bg-secondary/40 p-1">
                 <ProjectFilter
                   label="All"
-                  count="6"
+                  count={String(projects.length)}
                   active
-                />
-
-                <ProjectFilter
-                  label="Active"
-                  count="4"
-                />
-
-                <ProjectFilter
-                  label="Archived"
-                  count="2"
                 />
               </div>
             </section>
@@ -177,14 +119,29 @@ const Projects = () => {
             {/* ==================== PROJECT GRID ==================== */}
 
             <section>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {projects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                  />
-                ))}
-              </div>
+              {loading ? (
+                <div className="rounded-xl border border-line bg-panel p-8 text-center">
+                  <p className="text-sm text-muted">Loading projects...</p>
+                </div>
+              ) : error ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              ) : projects.length === 0 ? (
+                <div className="rounded-xl border border-line bg-panel p-8 text-center">
+                  <p className="font-display text-lg font-semibold">No projects yet</p>
+                  <p className="mt-1 text-sm text-muted">Create you first project to get started</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {projects.map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                    />
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* ==================== TIP ==================== */}
@@ -227,13 +184,7 @@ const ProjectCard = ({
       {/* Header */}
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-semibold ${
-              project.color === "bg-secondary"
-                ? "bg-secondary text-tertiary"
-                : `${project.color} text-secondary`
-            }`}
-          >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-[10px] font-semibold text-secondary">
             {project.name
               .split(" ")
               .map((word) => word[0])
@@ -246,7 +197,7 @@ const ProjectCard = ({
               {project.name}
             </h2>
 
-            <p className="text-xs text-muted">
+            <p className="truncate text-xs text-muted">
               {project.id}
             </p>
           </div>
@@ -256,42 +207,20 @@ const ProjectCard = ({
       </div>
 
       {/* Description */}
-      <p className="mb-5 min-h-12 text-sm leading-6 text-muted">
-        {project.description}
+      <p className="min-h-12 text-sm leading-6 text-muted">
+        {project.description || "No description provided."}
       </p>
 
-      {/* Progress */}
-      <div className="mb-5">
-        <div className="mb-2 flex items-center justify-between text-xs">
-          <span className="font-medium text-muted">
-            Task progress
-          </span>
-
-          <span className="font-medium text-primary">
-            {project.progress}%
-          </span>
-        </div>
-
-        <div className="h-1.5 overflow-hidden rounded-full bg-secondary/70">
-          <div
-            className="h-full rounded-full bg-primary"
-            style={{
-              width: `${project.progress}%`,
-            }}
-          />
-        </div>
-      </div>
-
       {/* Footer */}
-      <div className="flex items-center justify-between border-t border-line pt-4 text-xs text-muted">
-        <span className="flex items-center gap-1.5">
-          <CheckCircleIcon />
-          {project.tasks} tasks
+      <div className="mt-5 flex items-center justify-between border-t border-line pt-4 text-xs text-muted">
+        <span>
+          Created{" "}
+          {new Date(project.created_at).toLocaleDateString()}
         </span>
 
-        <span className="flex items-center gap-1.5">
-          <UsersIcon />
-          {project.members} members
+        <span>
+          Updated{" "}
+          {new Date(project.updated_at).toLocaleDateString()}
         </span>
       </div>
     </Link>
