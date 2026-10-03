@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -35,7 +36,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const hasRestoredSession = useRef(false);
+
   useEffect(() => {
+    if(hasRestoredSession.current) return;
+
+    hasRestoredSession.current = true;
+
     const restoreSession = async () => {
       try {
         const refreshResponse = await refreshToken();
@@ -44,8 +51,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setAccessToken(refreshResponse.accessToken);
 
         const meResponse = await getMe();
-
         setUser(meResponse);
+        
       } catch (error) {
         setAccessTokenState(null);
         setAccessToken(null);

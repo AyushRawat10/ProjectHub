@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import AppHeader from "../components/layouts/AppHeader";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
+import { useAuth } from "../context/AuthContext";
 
 type SettingsSection = "profile" | "notifications" | "workspace" | "security";
 
@@ -123,6 +124,7 @@ function Toggle({
 }
 
 const Settings = () => {
+  const { logout } = useAuth();
   const [activeSection, setActiveSection] =
     useState<SettingsSection>("profile");
 
@@ -237,6 +239,7 @@ const Settings = () => {
 
             <button
               type="button"
+              onClick={logout}
               className="flex w-full items-center gap-3 rounded-xl p-3 text-left text-red-600 transition hover:bg-red-50"
             >
               <LogOutIcon />
