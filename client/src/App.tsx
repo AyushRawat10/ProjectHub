@@ -11,6 +11,7 @@ import ProjectDetails from "./pages/ProjectDetails";
 import KanbanBoard from "./pages/KanbanBoard";
 import TaskDetails from "./pages/TaskDetails";
 import MyTasks from "./pages/MyTasks";
+import CreateProject from "./pages/CreateProject";
 
 import TeamMembers from "./pages/TeamMembers";
 import Settings from "./pages/Settings";
@@ -42,6 +43,15 @@ function App() {
               <Projects />
             </ProtectedRoute>
           } 
+        />
+
+        <Route
+          path="/projects/new"
+          element={
+            <ProtectedRoute>
+              <CreateProject />
+            </ProtectedRoute>
+          }
         />
 
         <Route 
