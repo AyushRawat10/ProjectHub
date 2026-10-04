@@ -10,6 +10,7 @@ import {
   getProjectMembers,
   type ProjectMember,
 } from "../services/project-member.service";
+import { getProjectTasks, type Task } from "../services/task.service";
 
 const ProjectDetails = () => {
   const { projectId } = useParams();
@@ -20,6 +21,9 @@ const ProjectDetails = () => {
 
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
+
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
 
   useEffect(() => {
     if (!projectId) {
@@ -45,19 +49,19 @@ const ProjectDetails = () => {
 
     loadProject();
   }, [projectId]);
-
+  
   useEffect(() => {
     if (!projectId) {
       setMembersLoading(false);
       return;
     }
-
+    
     const loadMembers = async () => {
       try {
         setMembersLoading(true);
-
+        
         const data = await getProjectMembers(projectId);
-
+        
         setMembers(data);
       } catch {
         setMembers([]);
@@ -65,10 +69,33 @@ const ProjectDetails = () => {
         setMembersLoading(false);
       }
     };
-
+    
     loadMembers();
   }, [projectId]);
-
+  
+  useEffect(() => {
+    if (!projectId) {
+      setTasksLoading(false);
+      return;
+    }
+    
+    const loadTasks = async () => {
+      try {
+        setTasksLoading(true);
+        
+        const data = await getProjectTasks(projectId);
+        
+        setTasks(data);
+      } catch {
+        setTasks([]);
+      } finally {
+        setTasksLoading(false);
+      }
+    };
+    
+    loadTasks();
+  }, [projectId]);
+  
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-paper">
@@ -282,12 +309,47 @@ const ProjectDetails = () => {
                   </div>
 
                   <div className="divide-y divide-line">
-                    <div className="p-5">
-                      <p className="text-sm text-muted">
-                        Tasks will appear here once task management is
-                        connected.
-                      </p>
-                    </div>
+                    {tasksLoading ? (
+                      <div className="p-5">
+                        <p className="text-sm text-muted">
+                          Loading tasks...
+                        </p>
+                      </div>
+                    ) : tasks.length === 0 ? (
+                      <div className="p-5">
+                        <p className="text-sm text-muted">
+                          No tasks have been created yet.
+                        </p>
+                      </div>
+                    ) : (
+                      tasks.slice(0, 5).map((task) => (
+                        <Link
+                          key={task.id}
+                          to={`/projects/${project.id}/tasks/${task.id}`}
+                          className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-paper/60 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <div className="mb-1 flex flex-wrap items-center gap-2">
+                              <Badge variant="muted">
+                                {task.priority}
+                              </Badge>
+
+                              <Badge variant="default">
+                                {task.status}
+                              </Badge>
+                            </div>
+
+                            <p className="truncate text-sm font-medium">
+                              {task.title}
+                            </p>
+                          </div>
+
+                          <div className="shrink-0 text-xs text-muted">
+                            {task.assignee_name ?? "Unassigned"}
+                          </div>
+                        </Link>
+                      ))
+                    )}
                   </div>
 
                   <div className="border-t border-line p-4">
