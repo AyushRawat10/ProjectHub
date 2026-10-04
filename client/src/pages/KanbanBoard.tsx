@@ -1,124 +1,11 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import Sidebar from "../components/layouts/Sidebar";
 import AppHeader from "../components/layouts/AppHeader";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 
-type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
-
-type Task = {
-  id: string;
-  title: string;
-  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-  status: TaskStatus;
-  assignee: string;
-  initials: string;
-  dueDate?: string;
-  comments?: number;
-  subtasks?: string;
-};
-
-const tasks: Task[] = [
-  {
-    id: "PH-104",
-    title: "Design project member management",
-    priority: "LOW",
-    status: "TODO",
-    assignee: "Ankit",
-    initials: "AS",
-    dueDate: "Oct 26",
-    comments: 1,
-  },
-  {
-    id: "PH-108",
-    title: "Write integration tests for authentication",
-    priority: "MEDIUM",
-    status: "TODO",
-    assignee: "Priya",
-    initials: "PS",
-    dueDate: "Oct 28",
-    comments: 3,
-  },
-  {
-    id: "PH-112",
-    title: "Implement task filtering and search",
-    priority: "HIGH",
-    status: "TODO",
-    assignee: "Rahul",
-    initials: "RK",
-    dueDate: "Oct 29",
-  },
-  {
-    id: "PH-115",
-    title: "Implement JWT refresh token flow",
-    priority: "URGENT",
-    status: "IN_PROGRESS",
-    assignee: "Ayush",
-    initials: "AR",
-    dueDate: "Oct 20",
-    comments: 2,
-    subtasks: "3/4",
-  },
-  {
-    id: "PH-119",
-    title: "Create project member API",
-    priority: "HIGH",
-    status: "IN_PROGRESS",
-    assignee: "Rahul",
-    initials: "RK",
-    dueDate: "Oct 18",
-    comments: 3,
-    subtasks: "3/4",
-  },
-  {
-    id: "PH-122",
-    title: "Setup task comment endpoints",
-    priority: "MEDIUM",
-    status: "IN_PROGRESS",
-    assignee: "Priya",
-    initials: "PS",
-    dueDate: "Oct 21",
-    comments: 2,
-  },
-  {
-    id: "PH-126",
-    title: "Refactor authentication middleware",
-    priority: "HIGH",
-    status: "IN_REVIEW",
-    assignee: "Ayush",
-    initials: "AR",
-    comments: 2,
-  },
-  {
-    id: "PH-129",
-    title: "Standardize API error responses",
-    priority: "LOW",
-    status: "IN_REVIEW",
-    assignee: "Ankit",
-    initials: "AS",
-    dueDate: "Oct 22",
-    comments: 2,
-  },
-  {
-    id: "PH-131",
-    title: "Create user registration endpoint",
-    priority: "MEDIUM",
-    status: "DONE",
-    assignee: "Ayush",
-    initials: "AR",
-    dueDate: "Completed Oct 15",
-  },
-  {
-    id: "PH-133",
-    title: "Implement email verification OTP",
-    priority: "HIGH",
-    status: "DONE",
-    assignee: "Rahul",
-    initials: "RK",
-    dueDate: "Completed Oct 14",
-  },
-];
+import { getProjectTasks, type Task, type TaskStatus} from "../services/task.service";
 
 const columnConfig: {
   status: TaskStatus;
@@ -145,24 +32,68 @@ const columnConfig: {
 const KanbanBoard = () => {
   const { projectId } = useParams();
 
-  const project = {
-    id: projectId ?? "PRJ-01",
-    name: "ProjectHub",
-    description:
-      "Project management workspace for development teams, tasks, members, and comments.",
-    owner: "Ayush Rawat",
-    totalTasks: 14,
-    completedTasks: 8,
-    inProgressTasks: 3,
-    reviewTasks: 2,
-    todoTasks: 1,
-    members: 4,
-  };
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const projectName = "ProjectHub";
+  useEffect(() => {
+    if (!projectId) {
+      setError("Project ID is missing");
+      setLoading(false);
+      return;
+    }
+
+    const loadTasks = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getProjectTasks(projectId);
+        
+        setTasks(data);
+      } catch {
+        setError("Failed to load tasks.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadTasks();
+  }, [projectId]);
 
   const getTasksByStatus = (status: TaskStatus) =>
     tasks.filter((task) => task.status === status);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <p className="text-sm text-muted">Loading tasks...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+        <div className="text-center">
+          <h1 className="font-display text-xl font-semibold">
+            Failed to load tasks
+          </h1>
+
+          <p className="mt-2 text-sm text-muted">
+            {error}
+          </p>
+
+          <Link
+            to="/projects"
+            className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-secondary"
+          >
+            Back to Projects
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-paper text-neutral">
@@ -184,8 +115,8 @@ const KanbanBoard = () => {
         <Sidebar
           activePage="projects"
           project={{ 
-            name: project.name, 
-            id: project.id, 
+            name: "Project", 
+            id: projectId ?? "",
             currentView: "board" 
           }}
         />
@@ -210,11 +141,11 @@ const KanbanBoard = () => {
                       to={`/projects/${projectId}`}
                       className="font-display text-xl font-semibold hover:text-primary"
                     >
-                      {projectName}
+                      Project
                     </Link>
 
                     <span className="rounded-md bg-secondary px-2 py-1 font-mono text-[10px] font-medium text-tertiary">
-                      {projectId ?? "PRJ-01"}
+                      {projectId}
                     </span>
                   </div>
 
@@ -401,10 +332,23 @@ const KanbanColumn = ({ status, label, tasks }: KanbanColumnProps) => {
    TASK CARD
    ============================================================ */
 
-const TaskCard = ({ task }: { task: Task }) => {
+const TaskCard = ({
+  task,
+}: {
+  task: Task;
+}) => {
+  const initials = task.assignee_name
+    ? task.assignee_name
+        .split(" ")
+        .map((word) => word[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "?";
+
   return (
     <Link
-      to="#"
+      to={`/projects/${task.project_id}/tasks/${task.id}`}
       className="block rounded-xl border border-line bg-panel p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     >
       {/* Task ID + priority */}
@@ -419,36 +363,18 @@ const TaskCard = ({ task }: { task: Task }) => {
 
       {/* Title */}
 
-      <h3 className="text-sm font-medium leading-5">{task.title}</h3>
+      <h3 className="text-sm font-medium leading-5">
+        {task.title}
+      </h3>
 
       {/* Meta */}
 
       <div className="mt-4 flex items-center justify-between gap-2 text-xs text-muted">
         <div className="flex min-w-0 items-center gap-3">
-          {task.dueDate && (
-            <span
-              className={`flex items-center gap-1 ${
-                task.status !== "DONE" && task.priority === "URGENT"
-                  ? "text-red-600"
-                  : ""
-              }`}
-            >
+          {task.due_date && (
+            <span className="flex items-center gap-1">
               <CalendarIcon />
-              {task.dueDate}
-            </span>
-          )}
-
-          {task.comments !== undefined && (
-            <span className="flex items-center gap-1">
-              <CommentIcon />
-              {task.comments}
-            </span>
-          )}
-
-          {task.subtasks && (
-            <span className="flex items-center gap-1">
-              <CheckIcon />
-              {task.subtasks}
+              {new Date(task.due_date).toLocaleDateString()}
             </span>
           )}
         </div>
@@ -457,9 +383,9 @@ const TaskCard = ({ task }: { task: Task }) => {
 
         <span
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-semibold text-secondary"
-          title={task.assignee}
+          title={task.assignee_name ?? "Unassigned"}
         >
-          {task.initials}
+          {initials}
         </span>
       </div>
     </Link>
