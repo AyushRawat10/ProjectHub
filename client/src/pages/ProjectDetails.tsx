@@ -1,31 +1,104 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import Sidebar from "../components/layouts/Sidebar";
 import Button from "../components/ui/Button";
 import AppHeader from "../components/layouts/AppHeader";
 import Badge from "../components/ui/Badge";
 
+import { getProjectById, type Project } from "../services/project.service";
+import {
+  getProjectMembers,
+  type ProjectMember,
+} from "../services/project-member.service";
+
 const ProjectDetails = () => {
   const { projectId } = useParams();
 
-  // Temporary data.
-  // Later this will come from your API.
-  const project = {
-    id: projectId ?? "PRJ-01",
-    name: "ProjectHub",
-    description:
-      "Project management workspace for development teams, tasks, members, and comments.",
-    owner: "Ayush Rawat",
-    totalTasks: 14,
-    completedTasks: 8,
-    inProgressTasks: 3,
-    reviewTasks: 2,
-    todoTasks: 1,
-    members: 4,
-  };
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const progress = Math.round(
-    (project.completedTasks / project.totalTasks) * 100,
-  );
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(true);
+
+  useEffect(() => {
+    if (!projectId) {
+      setError("Project ID is missing");
+      setLoading(false);
+      return;
+    }
+
+    const loadProject = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getProjectById(projectId);
+
+        setProject(data);
+      } catch {
+        setError("Failed to load project.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProject();
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!projectId) {
+      setMembersLoading(false);
+      return;
+    }
+
+    const loadMembers = async () => {
+      try {
+        setMembersLoading(true);
+
+        const data = await getProjectMembers(projectId);
+
+        setMembers(data);
+      } catch {
+        setMembers([]);
+      } finally {
+        setMembersLoading(false);
+      }
+    };
+
+    loadMembers();
+  }, [projectId]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <p className="text-sm text-muted">Loading project...</p>
+      </div>
+    );
+  }
+
+  if (error || !project) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+        <div className="text-center">
+          <h1 className="font-display text-xl font-semibold">
+            Project not found
+          </h1>
+
+          <p className="mt-2 text-sm text-muted">
+            {error || "The requested project could not be found."}
+          </p>
+
+          <Link
+            to="/projects"
+            className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-secondary"
+          >
+            Back to Projects
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-paper text-neutral">
@@ -89,8 +162,6 @@ const ProjectDetails = () => {
                       <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
                         {project.name}
                       </h1>
-
-                      <Badge variant="success">Active</Badge>
                     </div>
 
                     <p className="max-w-2xl text-sm leading-6 text-muted sm:text-base">
@@ -100,15 +171,10 @@ const ProjectDetails = () => {
                     <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted">
                       <span className="flex items-center gap-1.5">
                         <UserSmallIcon />
-                        Owner:{" "}
+                        Owner ID:{" "}
                         <strong className="font-medium text-neutral">
-                          {project.owner}
+                          {project.owner_id}
                         </strong>
-                      </span>
-
-                      <span className="flex items-center gap-1.5">
-                        <UsersIcon />
-                        {project.members} members
                       </span>
 
                       <span className="font-mono">{project.id}</span>
@@ -150,7 +216,7 @@ const ProjectDetails = () => {
                 Board
               </Link>
 
-              <ProjectTab label="Members" count={project.members} />
+              <ProjectTab label="Members" count={members.length} />
             </nav>
 
             {/* ==================================================
@@ -166,55 +232,30 @@ const ProjectDetails = () => {
                 {/* Task progress */}
 
                 <section className="rounded-xl border border-line bg-panel p-5 sm:p-6">
-                  <div className="mb-5 flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="font-display text-lg font-semibold">
-                        Project Progress
-                      </h2>
+                  <div>
+                    <h2 className="font-display text-lg font-semibold">
+                      Project Information
+                    </h2>
 
-                      <p className="mt-1 text-sm text-muted">
-                        Current task progress across the project.
-                      </p>
-                    </div>
-
-                    <span className="font-display text-2xl font-semibold text-primary">
-                      {progress}%
-                    </span>
+                    <p className="mt-1 text-sm text-muted">
+                      Basic information about this project.
+                    </p>
                   </div>
 
-                  <div className="mb-5 h-2 overflow-hidden rounded-full bg-secondary/70">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{
-                        width: `${progress}%`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <ProgressStat
-                      label="Completed"
-                      value={project.completedTasks}
-                      dot="bg-primary"
+                  <div className="mt-5 space-y-4">
+                    <DetailRow
+                      label="Created"
+                      value={new Date(project.created_at).toLocaleDateString()}
                     />
 
-                    <ProgressStat
-                      label="In Progress"
-                      value={project.inProgressTasks}
-                      dot="bg-primary"
+                    <DetailRow
+                      label="Last Updated"
+                      value={new Date(project.updated_at).toLocaleDateString()}
                     />
 
-                    <ProgressStat
-                      label="In Review"
-                      value={project.reviewTasks}
-                      dot="bg-secondary"
-                    />
+                    <DetailRow label="Owner ID" value={project.owner_id} mono />
 
-                    <ProgressStat
-                      label="To Do"
-                      value={project.todoTasks}
-                      dot="bg-muted"
-                    />
+                    <DetailRow label="Project ID" value={project.id} mono />
                   </div>
                 </section>
 
@@ -241,37 +282,12 @@ const ProjectDetails = () => {
                   </div>
 
                   <div className="divide-y divide-line">
-                    <TaskPreview
-                      id="TASK-104"
-                      title="Implement authentication flow"
-                      status="In Progress"
-                      priority="HIGH"
-                      assignee="Ayush"
-                    />
-
-                    <TaskPreview
-                      id="TASK-108"
-                      title="Build project member management"
-                      status="In Review"
-                      priority="MEDIUM"
-                      assignee="Rahul"
-                    />
-
-                    <TaskPreview
-                      id="TASK-112"
-                      title="Create task filtering"
-                      status="TODO"
-                      priority="LOW"
-                      assignee="Ankit"
-                    />
-
-                    <TaskPreview
-                      id="TASK-116"
-                      title="Improve task comments UI"
-                      status="In Progress"
-                      priority="MEDIUM"
-                      assignee="Ayush"
-                    />
+                    <div className="p-5">
+                      <p className="text-sm text-muted">
+                        Tasks will appear here once task management is
+                        connected.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="border-t border-line p-4">
@@ -279,7 +295,7 @@ const ProjectDetails = () => {
                       to={`/projects/${project.id}/board`}
                       className="flex items-center justify-center rounded-lg border border-line py-2.5 text-sm font-medium hover:bg-secondary/30"
                     >
-                      View all {project.totalTasks} tasks
+                      View all tasks
                     </Link>
                   </div>
                 </section>
@@ -297,34 +313,11 @@ const ProjectDetails = () => {
                     </p>
                   </div>
 
-                  <div className="space-y-5 p-5">
-                    <ActivityItem
-                      text="Ayush moved"
-                      highlight="Implement authentication flow"
-                      suffix="to In Progress"
-                      time="2 hours ago"
-                    />
-
-                    <ActivityItem
-                      text="Rahul completed review of"
-                      highlight="Project member management"
-                      suffix=""
-                      time="5 hours ago"
-                    />
-
-                    <ActivityItem
-                      text="Ankit created"
-                      highlight="Create task filtering"
-                      suffix=""
-                      time="Yesterday"
-                    />
-
-                    <ActivityItem
-                      text="Ayush added a comment to"
-                      highlight="Improve task comments UI"
-                      suffix=""
-                      time="Yesterday"
-                    />
+                  <div className="p-5">
+                    <p className="text-sm text-muted">
+                      Recent activity will appear here once activity tracking is
+                      connected.
+                    </p>
                   </div>
                 </section>
               </div>
@@ -352,18 +345,16 @@ const ProjectDetails = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <DetailRow label="Status" value="Active" />
-
-                    <DetailRow label="Owner" value={project.owner} />
+                    <DetailRow label="Owner ID" value={project.owner_id} mono />
 
                     <DetailRow
-                      label="Total Tasks"
-                      value={String(project.totalTasks)}
+                      label="Created"
+                      value={new Date(project.created_at).toLocaleDateString()}
                     />
 
                     <DetailRow
-                      label="Members"
-                      value={String(project.members)}
+                      label="Updated"
+                      value={new Date(project.updated_at).toLocaleDateString()}
                     />
 
                     <DetailRow label="Project ID" value={project.id} mono />
@@ -385,13 +376,27 @@ const ProjectDetails = () => {
                   </div>
 
                   <div className="space-y-3">
-                    <Member initials="AR" name="Ayush Rawat" role="Owner" />
-
-                    <Member initials="RK" name="Rahul Kumar" role="Leader" />
-
-                    <Member initials="AS" name="Ankit Sharma" role="Member" />
-
-                    <Member initials="PS" name="Priya Singh" role="Member" />
+                    {membersLoading ? (
+                      <p className="text-sm text-muted">Loading members...</p>
+                    ) : members.length === 0 ? (
+                      <p className="text-sm text-muted">
+                        No members have been added yet.
+                      </p>
+                    ) : (
+                      members.map((member) => (
+                        <Member
+                          key={member.id}
+                          initials={member.name
+                            .split(" ")
+                            .map((word) => word[0])
+                            .slice(0, 2)
+                            .join("")
+                            .toUpperCase()}
+                          name={member.name}
+                          role="Member"
+                        />
+                      ))
+                    )}
                   </div>
 
                   <Button variant="secondary" className="mt-5 w-full">
@@ -472,115 +477,6 @@ const ProjectTab = ({
         </Badge>
       )}
     </button>
-  );
-};
-
-const ProgressStat = ({
-  label,
-  value,
-  dot,
-}: {
-  label: string;
-  value: number;
-  dot: string;
-}) => {
-  return (
-    <div className="rounded-lg bg-paper p-3">
-      <div className="mb-1 flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${dot}`} />
-
-        <span className="text-xs text-muted">{label}</span>
-      </div>
-
-      <span className="font-display text-xl font-semibold">{value}</span>
-    </div>
-  );
-};
-
-const TaskPreview = ({
-  id,
-  title,
-  status,
-  priority,
-  assignee,
-}: {
-  id: string;
-  title: string;
-  status: string;
-  priority: string;
-  assignee: string;
-}) => {
-  return (
-    <Link
-      to="#"
-      className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-paper/60 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <div className="min-w-0">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[11px] font-semibold text-primary">
-            {id}
-          </span>
-
-          <PriorityBadge priority={priority} />
-        </div>
-
-        <p className="truncate text-sm font-medium">{title}</p>
-      </div>
-
-      <div className="flex shrink-0 items-center gap-4 text-xs text-muted">
-        <StatusBadge status={status} />
-
-        <span>{assignee}</span>
-      </div>
-    </Link>
-  );
-};
-
-const PriorityBadge = ({ priority }: { priority: string }) => {
-  const variant =
-    priority === "HIGH"
-      ? "danger"
-      : priority === "MEDIUM"
-        ? "warning"
-        : "muted";
-
-  return <Badge variant={variant}>{priority}</Badge>;
-};
-
-const StatusBadge = ({ status }: { status: string }) => {
-  return (
-    <Badge variant="default" className="gap-1.5">
-      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-      {status}
-    </Badge>
-  );
-};
-
-const ActivityItem = ({
-  text,
-  highlight,
-  suffix,
-  time,
-}: {
-  text: string;
-  highlight: string;
-  suffix: string;
-  time: string;
-}) => {
-  return (
-    <div className="flex gap-3">
-      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-
-      <div className="text-sm leading-5">
-        <p className="text-muted">
-          {text}{" "}
-          <strong className="font-medium text-neutral">{highlight}</strong>{" "}
-          {suffix}
-        </p>
-
-        <p className="mt-1 text-xs text-muted">{time}</p>
-      </div>
-    </div>
   );
 };
 

@@ -24,6 +24,11 @@ type CreateProjectResponse = {
   project: Project;
 }
 
+type GetProjectResponse = {
+  message: string;
+  project: Project;
+}
+
 export const getProjects = async (): Promise<Project[]> => {
   const response = await api.get<GetProjectsResponse>("/projects");
 
@@ -34,6 +39,14 @@ export const createProject = async (
   data: CreateProjectData
 ): Promise<Project> => {
   const response = await api.post<CreateProjectResponse>("/projects", data);
+
+  return response.data.project;
+}
+
+export const getProjectById = async (
+  projectId: string
+): Promise<Project> => {
+  const response = await api.get<GetProjectResponse>(`/projects/${projectId}`);
 
   return response.data.project;
 }
