@@ -1,33 +1,34 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import Sidebar from "../components/layouts/Sidebar";
 import AppHeader from "../components/layouts/AppHeader";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
+import Modal from "../components/ui/Modal";
 
-import { getProjectTasks, type Task, type TaskStatus, type TaskPriority} from "../services/task.service";
 
-const columnConfig: {
-  status: TaskStatus;
+import { createTask, getProjectTasks, type CreateTaskData, type Task, type TaskStatus, type TaskPriority} from "../services/task.service";
+
+type GroupBy = "STATUS" | "PRIORITY" | "ASSIGNEE";
+type BoardColumn = {
+  key: string;
   label: string;
-}[] = [
-  {
-    status: "TODO",
-    label: "TODO",
-  },
-  {
-    status: "IN_PROGRESS",
-    label: "IN PROGRESS",
-  },
-  {
-    status: "IN_REVIEW",
-    label: "IN REVIEW",
-  },
-  {
-    status: "DONE",
-    label: "DONE",
-  },
-];
+  value: string;
+}
+
+const statusColumns: BoardColumn[] = [
+  { key: "TODO", label: "TODO", value: "TODO"},
+  { key: "IN_PROGRESS", label: "IN PROGRESS", value: "IN_PROGRESS"},
+  { key: "IN_REVIEW", label: "IN REVIEW", value: "IN_REVIEW"},
+  { key: "DONE", label: "DONE", value: "DONE"},
+]
+
+const priorityColumns: BoardColumn[] = [
+  { key: "URGENT", label: "URGENT", value: "URGENT"},
+  { key: "HIGH", label: "HIGH", value: "HIGH"},
+  { key: "MEDIUM", label: "MEDIUM", value: "MEDIUM"},
+  { key: "LOW", label: "LOW", value: "LOW"},
+]
 
 const KanbanBoard = () => {
   const { projectId } = useParams();
@@ -42,6 +43,8 @@ const KanbanBoard = () => {
   const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
   const [sortOrder, setSortOrder] = useState<"DEFAULT" | "PRIORITY" | "DUE_DATE" | "TITLE">("DEFAULT")
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [groupBy, setGroupBy] = useState<GroupBy>("STATUS");
+  const [showGroupMenu, setShowGroupMenu] = useState(false)
 
   useEffect(() => {
     if (!projectId) {
@@ -71,44 +74,72 @@ const KanbanBoard = () => {
     loadTasks();
   }, [projectId, search, priority]);
 
-  const getTasksByStatus = (status: TaskStatus) => {
-    const filteredTasks = tasks.filter(
-      (task) =>
-        task.status === status &&
-        (assignee === "ALL" ||
-          (assignee === "UNASSIGNED"
-            ? task.assignee_id === null
-            : task.assignee_name === assignee))
-    );
+  const filteredTasks = tasks.filter(
+    (task) =>
+      (assignee === "ALL" ||
+        (assignee === "UNASSIGNED"
+          ? task.assignee_id === null
+          : task.assignee_name === assignee))
+  );
 
-    const priorityOrder: Record<TaskPriority, number> = {
-      URGENT: 1,
-      HIGH: 2,
-      MEDIUM: 3,
-      LOW: 4,
-    };
-
-    return [...filteredTasks].sort((a, b) => {
-      switch (sortOrder) {
-        case "PRIORITY":
-          return priorityOrder[a.priority] - priorityOrder[b.priority];
-
-        case "DUE_DATE":
-          if (!a.due_date) return 1;
-          if (!b.due_date) return -1;
-          return (
-            new Date(a.due_date).getTime() -
-            new Date(b.due_date).getTime()
-          );
-
-        case "TITLE":
-          return a.title.localeCompare(b.title);
-
-        default:
-          return 0;
-      }
-    });
+  const priorityOrder: Record<TaskPriority, number> = {
+    URGENT: 1,
+    HIGH: 2,
+    MEDIUM: 3,
+    LOW: 4,
   };
+
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    switch (sortOrder) {
+      case "PRIORITY":
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+
+      case "DUE_DATE":
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+
+        return (
+          new Date(a.due_date).getTime() -
+          new Date(b.due_date).getTime()
+        );
+
+      case "TITLE":
+        return a.title.localeCompare(b.title);
+
+      default:
+        return 0;
+    }
+  });
+
+  const assigneeColumns: BoardColumn[] = [
+    ...Array.from(
+      new Map(
+        tasks
+          .filter((task) => task.assignee_id !== null)
+          .map((task) => [
+            task.assignee_id!,
+            {
+              key: task.assignee_id!,
+              label: task.assignee_name ?? "Unknown",
+              value: task.assignee_id!,
+            },
+          ])
+      ).values()
+    ),
+    {
+      key: "UNASSIGNED",
+      label: "Unassigned",
+      value: "UNASSIGNED",
+    },
+  ];
+
+  const boardColumns =
+    groupBy === "STATUS"
+      ? statusColumns
+      : groupBy === "PRIORITY"
+        ? priorityColumns
+        : assigneeColumns;
 
   if (loading) {
     return (
@@ -203,7 +234,7 @@ const KanbanBoard = () => {
 
                     <span>•</span>
 
-                    <span>{tasks.length} tasks</span>
+                    <span>{sortedTasks.length} tasks</span>
                   </div>
                 </div>
 
@@ -343,12 +374,42 @@ const KanbanBoard = () => {
               <div className="hidden items-center gap-2 text-xs text-muted xl:flex">
                 <span>Group by:</span>
 
-                <button
-                  type="button"
-                  className="font-medium text-neutral hover:text-primary"
-                >
-                  Status⌄
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowGroupMenu((value) => !value)}
+                    className="font-medium text-neutral hover:text-primary"
+                  >
+                    {groupBy === "STATUS"
+                      ? "Status"
+                      : groupBy === "PRIORITY"
+                        ? "Priority"
+                        : "Assignee"}
+                    ⌄
+                  </button>
+
+                  {showGroupMenu && (
+                    <div className="absolute left-0 top-full z-30 mt-2 w-36 rounded-lg border border-line bg-panel p-1 shadow-lg">
+                      {[
+                        { value: "STATUS", label: "Status" },
+                        { value: "PRIORITY", label: "Priority" },
+                        { value: "ASSIGNEE", label: "Assignee" },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setGroupBy(option.value as GroupBy);
+                            setShowGroupMenu(false);
+                          }}
+                          className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <span className="text-line">|</span>
 
@@ -402,7 +463,7 @@ const KanbanBoard = () => {
                 EMPTY TASK STATE
             ================================================= */}
 
-            {tasks.length === 0 && (
+            {sortedTasks.length === 0 && (
               <div className="mb-6 rounded-xl border border-line bg-panel p-6 text-center">
                 <p className="text-sm font-medium text-neutral">
                   No tasks found
@@ -418,14 +479,33 @@ const KanbanBoard = () => {
             ================================================= */}
 
             <section className="overflow-x-auto pb-5">
-              <div className="grid min-w-[72rem] grid-cols-4 gap-4">
-                {columnConfig.map((column) => {
-                  const columnTasks = getTasksByStatus(column.status);
+              <div
+                className="grid min-w-[72rem] gap-4"
+                style={{
+                  gridTemplateColumns: `repeat(${boardColumns.length}, minmax(0, 1fr))`,
+                }}
+              >
+                {boardColumns.map((column) => {
+                  const columnTasks = sortedTasks.filter((task) => {
+                    if (groupBy === "STATUS") {
+                      return task.status === column.value;
+                    }
+
+                    if (groupBy === "PRIORITY") {
+                      return task.priority === column.value;
+                    }
+
+                    if (column.value === "UNASSIGNED") {
+                      return task.assignee_id === null;
+                    }
+
+                    return task.assignee_id === column.value;
+                  });
 
                   return (
                     <KanbanColumn
-                      key={column.status}
-                      status={column.status}
+                      key={column.key}
+                      status={groupBy === "STATUS" ? column.value as TaskStatus : "TODO"}
                       label={column.label}
                       tasks={columnTasks}
                     />
