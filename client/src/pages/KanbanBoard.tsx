@@ -5,7 +5,7 @@ import AppHeader from "../components/layouts/AppHeader";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 
-import { getProjectTasks, type Task, type TaskStatus} from "../services/task.service";
+import { getProjectTasks, type Task, type TaskStatus, type TaskPriority} from "../services/task.service";
 
 const columnConfig: {
   status: TaskStatus;
@@ -35,6 +35,13 @@ const KanbanBoard = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [priority, setPriority] = useState<TaskPriority | "ALL">("ALL");
+  const [showPriorityMenu, setShowPriorityMenu] = useState(false);
+  const [assignee, setAssignee] = useState<string>("ALL");
+  const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"DEFAULT" | "PRIORITY" | "DUE_DATE" | "TITLE">("DEFAULT")
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   useEffect(() => {
     if (!projectId) {
@@ -48,7 +55,10 @@ const KanbanBoard = () => {
         setLoading(true);
         setError("");
 
-        const data = await getProjectTasks(projectId);
+        const data = await getProjectTasks(projectId, {
+          search: search.trim() || undefined,
+          priority: priority === "ALL" ? undefined : priority,
+        });
         
         setTasks(data);
       } catch {
@@ -59,10 +69,46 @@ const KanbanBoard = () => {
     }
 
     loadTasks();
-  }, [projectId]);
+  }, [projectId, search, priority]);
 
-  const getTasksByStatus = (status: TaskStatus) =>
-    tasks.filter((task) => task.status === status);
+  const getTasksByStatus = (status: TaskStatus) => {
+    const filteredTasks = tasks.filter(
+      (task) =>
+        task.status === status &&
+        (assignee === "ALL" ||
+          (assignee === "UNASSIGNED"
+            ? task.assignee_id === null
+            : task.assignee_name === assignee))
+    );
+
+    const priorityOrder: Record<TaskPriority, number> = {
+      URGENT: 1,
+      HIGH: 2,
+      MEDIUM: 3,
+      LOW: 4,
+    };
+
+    return [...filteredTasks].sort((a, b) => {
+      switch (sortOrder) {
+        case "PRIORITY":
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+
+        case "DUE_DATE":
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return (
+            new Date(a.due_date).getTime() -
+            new Date(b.due_date).getTime()
+          );
+
+        case "TITLE":
+          return a.title.localeCompare(b.title);
+
+        default:
+          return 0;
+      }
+    });
+  };
 
   if (loading) {
     return (
@@ -188,7 +234,13 @@ const KanbanBoard = () => {
               <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-paper px-3 text-sm text-muted sm:max-w-md">
                 <SearchIcon />
 
-                <span className="truncate">Search project tasks...</span>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search project tasks..."
+                  className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted"
+                />
 
                 <span className="ml-auto shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px]">
                   /
@@ -197,12 +249,93 @@ const KanbanBoard = () => {
 
               {/* Filters */}
 
-              <div className="flex items-center gap-2 overflow-x-auto">
+              <div className="flex flex-wrap items-center gap-2">
                 <FilterButton icon={<FilterIcon />} label="Filter" />
 
-                <FilterButton label="Priority" dropdown />
+                <div className="relative">
+                  <FilterButton
+                    label="Priority"
+                    dropdown
+                    onClick={() => setShowPriorityMenu((value) => !value)}
+                  />
 
-                <FilterButton label="Assignee" dropdown />
+                  {showPriorityMenu && (
+                    <div className="absolute left-0 top-full z-20 mt-2 w-40 rounded-lg border border-line bg-panel p-1 shadow-lg">
+                      {["ALL", "LOW", "MEDIUM", "HIGH", "URGENT"].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => {
+                            setPriority(value as TaskPriority | "ALL");
+                            setShowPriorityMenu(false);
+                          }}
+                          className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                        >
+                          {value === "ALL" ? "All priorities" : value}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <FilterButton
+                    label={assignee === "ALL"
+                      ? "Assignee" 
+                      : assignee === "UNASSIGNED"
+                        ? "Unassigned"
+                        : assignee
+                    }
+                    dropdown
+                    onClick={() => setShowAssigneeMenu((value) => !value)}
+                  />
+
+                  {showAssigneeMenu && (
+                    <div className="absolute left-0 top-full z-20 mt-2 w-48 rounded-lg border border-line bg-panel p-1 shadow-lg">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAssignee("ALL");
+                          setShowAssigneeMenu(false);
+                        }}
+                        className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                      >
+                        All assignees
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAssignee("UNASSIGNED");
+                          setShowAssigneeMenu(false);
+                        }}
+                        className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                      >
+                        Unassigned
+                      </button>
+
+                      {Array.from(
+                        new Set(
+                          tasks
+                            .map((task) => task.assignee_name)
+                            .filter((name): name is string => Boolean(name))
+                        )
+                      ).map((name) => (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => {
+                            setAssignee(name);
+                            setShowAssigneeMenu(false);
+                          }}
+                          className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                        >
+                          {name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="hidden h-6 w-px bg-line xl:block" />
@@ -221,14 +354,64 @@ const KanbanBoard = () => {
 
                 <span>Sort:</span>
 
-                <button
-                  type="button"
-                  className="font-medium text-neutral hover:text-primary"
-                >
-                  Priority⌄
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowSortMenu((value) => !value)}
+                    className="font-medium text-neutral hover:text-primary"
+                  >
+                    {sortOrder === "DEFAULT"
+                      ? "Default"
+                      : sortOrder === "PRIORITY"
+                        ? "Priority"
+                        : sortOrder === "DUE_DATE"
+                          ? "Due Date"
+                          : "Title"}
+                    ⌄
+                  </button>
+
+                  {showSortMenu && (
+                    <div className="absolute right-0 top-full z-30 mt-2 w-40 rounded-lg border border-line bg-panel p-1 shadow-lg">
+                      {[
+                        { value: "DEFAULT", label: "Default" },
+                        { value: "PRIORITY", label: "Priority" },
+                        { value: "DUE_DATE", label: "Due Date" },
+                        { value: "TITLE", label: "Title (A–Z)" },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setSortOrder(
+                              option.value as "DEFAULT" | "PRIORITY" | "DUE_DATE" | "TITLE"
+                            );
+                            setShowSortMenu(false);
+                          }}
+                          className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </section>
+
+            {/* =================================================
+                EMPTY TASK STATE
+            ================================================= */}
+
+            {tasks.length === 0 && (
+              <div className="mb-6 rounded-xl border border-line bg-panel p-6 text-center">
+                <p className="text-sm font-medium text-neutral">
+                  No tasks found
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  Create a task to start managing this project.
+                </p>
+              </div>
+            )}
 
             {/* =================================================
                 KANBAN BOARD
@@ -400,14 +583,17 @@ const FilterButton = ({
   icon,
   label,
   dropdown = false,
+  onClick,
 }: {
   icon?: ReactNode;
   label: string;
   dropdown?: boolean;
+  onClick?: () => void;
 }) => {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-2 text-xs font-medium text-muted hover:bg-secondary/40 hover:text-neutral"
     >
       {icon}
