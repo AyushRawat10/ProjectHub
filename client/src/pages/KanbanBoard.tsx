@@ -7,8 +7,8 @@ import Badge from "../components/ui/Badge";
 import Modal from "../components/ui/Modal";
 import Input from "../components/ui/Input";
 
-
 import { createTask, getProjectTasks, type CreateTaskData, type Task, type TaskStatus, type TaskPriority} from "../services/task.service";
+import { getProjectMembers, type ProjectMember } from "../services/project-member.service";
 
 type GroupBy = "STATUS" | "PRIORITY" | "ASSIGNEE";
 type BoardColumn = {
@@ -49,6 +49,8 @@ const KanbanBoard = () => {
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
   const [createTaskError, setCreateTaskError] = useState("");
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
 
   const [newTask, setNewTask] = useState<CreateTaskData>({
     title: "",
@@ -84,6 +86,26 @@ const KanbanBoard = () => {
   useEffect(() => {
     loadTasks();
   }, [projectId, search, priority]);
+
+  useEffect(() => {
+    if(!projectId) return;
+
+    const loadMembers = async () => {
+      try {
+        setMembersLoading(true);
+
+        const data = await getProjectMembers(projectId);
+
+        setMembers(data);
+      } catch (error) {
+        console.error("Failed to load project members:", error);
+      } finally {
+        setMembersLoading(false);
+      }
+    };
+
+    loadMembers();
+  }, [projectId]);
 
   const filteredTasks = tasks.filter(
     (task) =>
@@ -653,6 +675,38 @@ const KanbanBoard = () => {
               rows={3}
               className="w-full rounded-lg border border-line bg-panel px-3 py-2.5 text-sm text-neutral outline-none focus:border-primary"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="assigneeId"
+              className="mb-1.5 block text-sm font-medium text-neutral"
+            >
+              Assignee
+            </label>
+
+            <select
+              id="assigneeId"
+              value={newTask.assigneeId ?? ""}
+              onChange={(event) =>
+                setNewTask((current) => ({
+                  ...current,
+                  assigneeId: event.target.value || undefined,
+                }))
+              }
+              disabled={membersLoading}
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2.5 text-sm text-neutral outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option value="">
+                {membersLoading ? "Loading members..." : "Unassigned"}
+              </option>
+
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name} ({member.email})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
