@@ -5,6 +5,7 @@ import AppHeader from "../components/layouts/AppHeader";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import Modal from "../components/ui/Modal";
+import Input from "../components/ui/Input";
 
 
 import { createTask, getProjectTasks, type CreateTaskData, type Task, type TaskStatus, type TaskPriority} from "../services/task.service";
@@ -44,33 +45,43 @@ const KanbanBoard = () => {
   const [sortOrder, setSortOrder] = useState<"DEFAULT" | "PRIORITY" | "DUE_DATE" | "TITLE">("DEFAULT")
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("STATUS");
-  const [showGroupMenu, setShowGroupMenu] = useState(false)
+  const [showGroupMenu, setShowGroupMenu] = useState(false);
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [creatingTask, setCreatingTask] = useState(false);
+  const [createTaskError, setCreateTaskError] = useState("");
 
-  useEffect(() => {
+  const [newTask, setNewTask] = useState<CreateTaskData>({
+    title: "",
+    description: "",
+    priority: "MEDIUM",
+    status: "TODO",
+  })
+
+  const loadTasks = async () => {
     if (!projectId) {
       setError("Project ID is missing");
       setLoading(false);
       return;
     }
 
-    const loadTasks = async () => {
-      try {
-        setLoading(true);
-        setError("");
+    try {
+      setLoading(true);
+      setError("");
 
-        const data = await getProjectTasks(projectId, {
-          search: search.trim() || undefined,
-          priority: priority === "ALL" ? undefined : priority,
-        });
-        
-        setTasks(data);
-      } catch {
-        setError("Failed to load tasks.");
-      } finally {
-        setLoading(false);
-      }
+      const data = await getProjectTasks(projectId, {
+        search: search.trim() || undefined,
+        priority: priority === "ALL" ? undefined : priority,
+      });
+
+      setTasks(data);
+    } catch {
+      setError("Failed to load tasks.");
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadTasks();
   }, [projectId, search, priority]);
 
@@ -111,6 +122,59 @@ const KanbanBoard = () => {
         return 0;
     }
   });
+
+  const handleCreateTask = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!projectId) {
+      setCreateTaskError("Project ID is missing.");
+      return;
+    }
+
+    if (!newTask.title.trim()) {
+      setCreateTaskError("Task title is required.");
+      return;
+    }
+
+    try {
+      setCreatingTask(true);
+      setCreateTaskError("");
+
+      const taskData: CreateTaskData = {
+        ...newTask,
+        title: newTask.title.trim(),
+        description: newTask.description?.trim() || undefined,
+      };
+
+      await createTask(projectId, taskData);
+
+      setShowCreateTaskModal(false);
+
+      await loadTasks();
+      setNewTask({
+        title: "",
+        description: "",
+        priority: "MEDIUM",
+        status: "TODO",
+      });
+    } catch {
+      setCreateTaskError("Failed to create task. Please try again.");
+    } finally {
+      setCreatingTask(false);
+    }
+  };
+
+  const openCreateTaskModal = (status: TaskStatus = "TODO") => {
+    setNewTask({
+      title: "",
+      description: "",
+      priority: "MEDIUM",
+      status,
+    });
+
+    setCreateTaskError("");
+    setShowCreateTaskModal(true);
+  }
 
   const assigneeColumns: BoardColumn[] = [
     ...Array.from(
@@ -173,367 +237,488 @@ const KanbanBoard = () => {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-paper text-neutral">
-      {/* ======================================================
-          TOP BAR
-      ====================================================== */}
+    <>
+      <div className="min-h-screen overflow-x-hidden bg-paper text-neutral">
+        {/* ======================================================
+            TOP BAR
+        ====================================================== */}
 
-      <AppHeader pageTitle="Board" />
+        <AppHeader pageTitle="Board" />
 
-      {/* ======================================================
-          APP LAYOUT
-      ====================================================== */}
+        {/* ======================================================
+            APP LAYOUT
+        ====================================================== */}
 
-      <div className="flex min-h-[calc(100vh-4rem)]">
-        {/* ====================================================
-            SIDEBAR
-        ==================================================== */}
+        <div className="flex min-h-[calc(100vh-4rem)]">
+          {/* ====================================================
+              SIDEBAR
+          ==================================================== */}
 
-        <Sidebar
-          activePage="projects"
-          project={{ 
-            name: "Project", 
-            id: projectId ?? "",
-            currentView: "board" 
-          }}
-        />
+          <Sidebar
+            activePage="projects"
+            project={{ 
+              name: "Project", 
+              id: projectId ?? "",
+              currentView: "board" 
+            }}
+          />
 
-        {/* ====================================================
-            MAIN
-        ==================================================== */}
+          {/* ====================================================
+              MAIN
+          ==================================================== */}
 
-        <main className="min-w-0 flex-1">
-          <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 lg:px-8">
-            {/* =================================================
-                PROJECT HEADER
-            ================================================= */}
+          <main className="min-w-0 flex-1">
+            <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 lg:px-8">
+              {/* =================================================
+                  PROJECT HEADER
+              ================================================= */}
 
-            <section className="mb-5">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div>
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-primary" />
+              <section className="mb-5">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div>
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-primary" />
 
-                    <Link
-                      to={`/projects/${projectId}`}
-                      className="font-display text-xl font-semibold hover:text-primary"
-                    >
-                      Project
-                    </Link>
+                      <Link
+                        to={`/projects/${projectId}`}
+                        className="font-display text-xl font-semibold hover:text-primary"
+                      >
+                        Project
+                      </Link>
 
-                    <span className="rounded-md bg-secondary px-2 py-1 font-mono text-[10px] font-medium text-tertiary">
-                      {projectId}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-sm text-muted">
-                    <span className="flex items-center gap-1.5">
-                      <BoardIcon />
-                      Kanban Board
-                    </span>
-
-                    <span>•</span>
-
-                    <span>{sortedTasks.length} tasks</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant="default"
-                    className="hidden items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-sm sm:flex"
-                  >
-                    <span className="h-2 w-2 rounded-full bg-primary" />
-                    Active Project
-                  </Badge>
-
-                  <Button variant="primary" className="px-4 py-2.5">
-                    <PlusIcon />
-                    New Task
-                  </Button>
-                </div>
-              </div>
-            </section>
-
-            {/* =================================================
-                BOARD TOOLBAR
-            ================================================= */}
-
-            <section className="mb-5 flex flex-col gap-3 rounded-xl border border-line bg-panel p-3 sm:flex-row sm:items-center">
-              {/* Search */}
-
-              <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-paper px-3 text-sm text-muted sm:max-w-md">
-                <SearchIcon />
-
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search project tasks..."
-                  className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted"
-                />
-
-                <span className="ml-auto shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px]">
-                  /
-                </span>
-              </div>
-
-              {/* Filters */}
-
-              <div className="flex flex-wrap items-center gap-2">
-                <FilterButton icon={<FilterIcon />} label="Filter" />
-
-                <div className="relative">
-                  <FilterButton
-                    label="Priority"
-                    dropdown
-                    onClick={() => setShowPriorityMenu((value) => !value)}
-                  />
-
-                  {showPriorityMenu && (
-                    <div className="absolute left-0 top-full z-20 mt-2 w-40 rounded-lg border border-line bg-panel p-1 shadow-lg">
-                      {["ALL", "LOW", "MEDIUM", "HIGH", "URGENT"].map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => {
-                            setPriority(value as TaskPriority | "ALL");
-                            setShowPriorityMenu(false);
-                          }}
-                          className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
-                        >
-                          {value === "ALL" ? "All priorities" : value}
-                        </button>
-                      ))}
+                      <span className="rounded-md bg-secondary px-2 py-1 font-mono text-[10px] font-medium text-tertiary">
+                        {projectId}
+                      </span>
                     </div>
-                  )}
-                </div>
 
-                <div className="relative">
-                  <FilterButton
-                    label={assignee === "ALL"
-                      ? "Assignee" 
-                      : assignee === "UNASSIGNED"
-                        ? "Unassigned"
-                        : assignee
-                    }
-                    dropdown
-                    onClick={() => setShowAssigneeMenu((value) => !value)}
+                    <div className="flex items-center gap-3 text-sm text-muted">
+                      <span className="flex items-center gap-1.5">
+                        <BoardIcon />
+                        Kanban Board
+                      </span>
+
+                      <span>•</span>
+
+                      <span>{sortedTasks.length} tasks</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="default"
+                      className="hidden items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-sm sm:flex"
+                    >
+                      <span className="h-2 w-2 rounded-full bg-primary" />
+                      Active Project
+                    </Badge>
+
+                    <Button
+                      variant="primary"
+                      className="px-4 py-2.5"
+                      onClick={() => openCreateTaskModal()}
+                    >
+                      <PlusIcon />
+                      New Task
+                    </Button>
+                  </div>
+                </div>
+              </section>
+
+              {/* =================================================
+                  BOARD TOOLBAR
+              ================================================= */}
+
+              <section className="mb-5 flex flex-col gap-3 rounded-xl border border-line bg-panel p-3 sm:flex-row sm:items-center">
+                {/* Search */}
+
+                <div className="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-paper px-3 text-sm text-muted sm:max-w-md">
+                  <SearchIcon />
+
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search project tasks..."
+                    className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted"
                   />
 
-                  {showAssigneeMenu && (
-                    <div className="absolute left-0 top-full z-20 mt-2 w-48 rounded-lg border border-line bg-panel p-1 shadow-lg">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAssignee("ALL");
-                          setShowAssigneeMenu(false);
-                        }}
-                        className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
-                      >
-                        All assignees
-                      </button>
+                  <span className="ml-auto shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px]">
+                    /
+                  </span>
+                </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAssignee("UNASSIGNED");
-                          setShowAssigneeMenu(false);
-                        }}
-                        className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
-                      >
-                        Unassigned
-                      </button>
+                {/* Filters */}
 
-                      {Array.from(
-                        new Set(
-                          tasks
-                            .map((task) => task.assignee_name)
-                            .filter((name): name is string => Boolean(name))
-                        )
-                      ).map((name) => (
+                <div className="flex flex-wrap items-center gap-2">
+                  <FilterButton icon={<FilterIcon />} label="Filter" />
+
+                  <div className="relative">
+                    <FilterButton
+                      label="Priority"
+                      dropdown
+                      onClick={() => setShowPriorityMenu((value) => !value)}
+                    />
+
+                    {showPriorityMenu && (
+                      <div className="absolute left-0 top-full z-20 mt-2 w-40 rounded-lg border border-line bg-panel p-1 shadow-lg">
+                        {["ALL", "LOW", "MEDIUM", "HIGH", "URGENT"].map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => {
+                              setPriority(value as TaskPriority | "ALL");
+                              setShowPriorityMenu(false);
+                            }}
+                            className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                          >
+                            {value === "ALL" ? "All priorities" : value}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <FilterButton
+                      label={assignee === "ALL"
+                        ? "Assignee" 
+                        : assignee === "UNASSIGNED"
+                          ? "Unassigned"
+                          : assignee
+                      }
+                      dropdown
+                      onClick={() => setShowAssigneeMenu((value) => !value)}
+                    />
+
+                    {showAssigneeMenu && (
+                      <div className="absolute left-0 top-full z-20 mt-2 w-48 rounded-lg border border-line bg-panel p-1 shadow-lg">
                         <button
-                          key={name}
                           type="button"
                           onClick={() => {
-                            setAssignee(name);
+                            setAssignee("ALL");
                             setShowAssigneeMenu(false);
                           }}
                           className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
                         >
-                          {name}
+                          All assignees
                         </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              <div className="hidden h-6 w-px bg-line xl:block" />
-
-              <div className="hidden items-center gap-2 text-xs text-muted xl:flex">
-                <span>Group by:</span>
-
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowGroupMenu((value) => !value)}
-                    className="font-medium text-neutral hover:text-primary"
-                  >
-                    {groupBy === "STATUS"
-                      ? "Status"
-                      : groupBy === "PRIORITY"
-                        ? "Priority"
-                        : "Assignee"}
-                    ⌄
-                  </button>
-
-                  {showGroupMenu && (
-                    <div className="absolute left-0 top-full z-30 mt-2 w-36 rounded-lg border border-line bg-panel p-1 shadow-lg">
-                      {[
-                        { value: "STATUS", label: "Status" },
-                        { value: "PRIORITY", label: "Priority" },
-                        { value: "ASSIGNEE", label: "Assignee" },
-                      ].map((option) => (
                         <button
-                          key={option.value}
                           type="button"
                           onClick={() => {
-                            setGroupBy(option.value as GroupBy);
-                            setShowGroupMenu(false);
+                            setAssignee("UNASSIGNED");
+                            setShowAssigneeMenu(false);
                           }}
                           className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
                         >
-                          {option.label}
+                          Unassigned
                         </button>
-                      ))}
-                    </div>
-                  )}
+
+                        {Array.from(
+                          new Set(
+                            tasks
+                              .map((task) => task.assignee_name)
+                              .filter((name): name is string => Boolean(name))
+                          )
+                        ).map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() => {
+                              setAssignee(name);
+                              setShowAssigneeMenu(false);
+                            }}
+                            className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <span className="text-line">|</span>
+                <div className="hidden h-6 w-px bg-line xl:block" />
 
-                <span>Sort:</span>
+                <div className="hidden items-center gap-2 text-xs text-muted xl:flex">
+                  <span>Group by:</span>
 
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowSortMenu((value) => !value)}
-                    className="font-medium text-neutral hover:text-primary"
-                  >
-                    {sortOrder === "DEFAULT"
-                      ? "Default"
-                      : sortOrder === "PRIORITY"
-                        ? "Priority"
-                        : sortOrder === "DUE_DATE"
-                          ? "Due Date"
-                          : "Title"}
-                    ⌄
-                  </button>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowGroupMenu((value) => !value)}
+                      className="font-medium text-neutral hover:text-primary"
+                    >
+                      {groupBy === "STATUS"
+                        ? "Status"
+                        : groupBy === "PRIORITY"
+                          ? "Priority"
+                          : "Assignee"}
+                      ⌄
+                    </button>
 
-                  {showSortMenu && (
-                    <div className="absolute right-0 top-full z-30 mt-2 w-40 rounded-lg border border-line bg-panel p-1 shadow-lg">
-                      {[
-                        { value: "DEFAULT", label: "Default" },
-                        { value: "PRIORITY", label: "Priority" },
-                        { value: "DUE_DATE", label: "Due Date" },
-                        { value: "TITLE", label: "Title (A–Z)" },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => {
-                            setSortOrder(
-                              option.value as "DEFAULT" | "PRIORITY" | "DUE_DATE" | "TITLE"
-                            );
-                            setShowSortMenu(false);
-                          }}
-                          className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    {showGroupMenu && (
+                      <div className="absolute left-0 top-full z-30 mt-2 w-36 rounded-lg border border-line bg-panel p-1 shadow-lg">
+                        {[
+                          { value: "STATUS", label: "Status" },
+                          { value: "PRIORITY", label: "Priority" },
+                          { value: "ASSIGNEE", label: "Assignee" },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setGroupBy(option.value as GroupBy);
+                              setShowGroupMenu(false);
+                            }}
+                            className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <span className="text-line">|</span>
+
+                  <span>Sort:</span>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowSortMenu((value) => !value)}
+                      className="font-medium text-neutral hover:text-primary"
+                    >
+                      {sortOrder === "DEFAULT"
+                        ? "Default"
+                        : sortOrder === "PRIORITY"
+                          ? "Priority"
+                          : sortOrder === "DUE_DATE"
+                            ? "Due Date"
+                            : "Title"}
+                      ⌄
+                    </button>
+
+                    {showSortMenu && (
+                      <div className="absolute right-0 top-full z-30 mt-2 w-40 rounded-lg border border-line bg-panel p-1 shadow-lg">
+                        {[
+                          { value: "DEFAULT", label: "Default" },
+                          { value: "PRIORITY", label: "Priority" },
+                          { value: "DUE_DATE", label: "Due Date" },
+                          { value: "TITLE", label: "Title (A–Z)" },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                              setSortOrder(
+                                option.value as "DEFAULT" | "PRIORITY" | "DUE_DATE" | "TITLE"
+                              );
+                              setShowSortMenu(false);
+                            }}
+                            className="w-full rounded-md px-3 py-2 text-left text-xs font-medium text-neutral hover:bg-secondary/40"
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
+              </section>
+
+              {/* =================================================
+                  EMPTY TASK STATE
+              ================================================= */}
+
+              {sortedTasks.length === 0 && (
+                <div className="mb-6 rounded-xl border border-line bg-panel p-6 text-center">
+                  <p className="text-sm font-medium text-neutral">
+                    No tasks found
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    Create a task to start managing this project.
+                  </p>
+                </div>
+              )}
+
+              {/* =================================================
+                  KANBAN BOARD
+              ================================================= */}
+
+              <section className="overflow-x-auto pb-5">
+                <div
+                  className="grid min-w-[72rem] gap-4"
+                  style={{
+                    gridTemplateColumns: `repeat(${boardColumns.length}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {boardColumns.map((column) => {
+                    const columnTasks = sortedTasks.filter((task) => {
+                      if (groupBy === "STATUS") {
+                        return task.status === column.value;
+                      }
+
+                      if (groupBy === "PRIORITY") {
+                        return task.priority === column.value;
+                      }
+
+                      if (column.value === "UNASSIGNED") {
+                        return task.assignee_id === null;
+                      }
+
+                      return task.assignee_id === column.value;
+                    });
+
+                    return (
+                      <KanbanColumn
+                        key={column.key}
+                        status={groupBy === "STATUS" ? column.value as TaskStatus : "TODO"}
+                        label={column.label}
+                        tasks={columnTasks}
+                        onAddTask={() => 
+                          openCreateTaskModal(
+                            groupBy === "STATUS"
+                              ? (column.value as TaskStatus)
+                              : "TODO"
+                          )
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* =================================================
+                  FOOTER
+              ================================================= */}
+
+              <div className="flex flex-col gap-3 border-t border-line pt-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  ProjectHub task board
+                </span>
+
+                <span>
+                  Press <kbd>/</kbd> to search
+                  <span className="mx-2">•</span>
+                  Press <kbd>C</kbd> to create a task
+                </span>
               </div>
-            </section>
-
-            {/* =================================================
-                EMPTY TASK STATE
-            ================================================= */}
-
-            {sortedTasks.length === 0 && (
-              <div className="mb-6 rounded-xl border border-line bg-panel p-6 text-center">
-                <p className="text-sm font-medium text-neutral">
-                  No tasks found
-                </p>
-                <p className="mt-1 text-sm text-muted">
-                  Create a task to start managing this project.
-                </p>
-              </div>
-            )}
-
-            {/* =================================================
-                KANBAN BOARD
-            ================================================= */}
-
-            <section className="overflow-x-auto pb-5">
-              <div
-                className="grid min-w-[72rem] gap-4"
-                style={{
-                  gridTemplateColumns: `repeat(${boardColumns.length}, minmax(0, 1fr))`,
-                }}
-              >
-                {boardColumns.map((column) => {
-                  const columnTasks = sortedTasks.filter((task) => {
-                    if (groupBy === "STATUS") {
-                      return task.status === column.value;
-                    }
-
-                    if (groupBy === "PRIORITY") {
-                      return task.priority === column.value;
-                    }
-
-                    if (column.value === "UNASSIGNED") {
-                      return task.assignee_id === null;
-                    }
-
-                    return task.assignee_id === column.value;
-                  });
-
-                  return (
-                    <KanbanColumn
-                      key={column.key}
-                      status={groupBy === "STATUS" ? column.value as TaskStatus : "TODO"}
-                      label={column.label}
-                      tasks={columnTasks}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* =================================================
-                FOOTER
-            ================================================= */}
-
-            <div className="flex flex-col gap-3 border-t border-line pt-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-primary" />
-                ProjectHub task board
-              </span>
-
-              <span>
-                Press <kbd>/</kbd> to search
-                <span className="mx-2">•</span>
-                Press <kbd>C</kbd> to create a task
-              </span>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+
+      <Modal
+        isOpen={showCreateTaskModal}
+        onClose={() => {
+          if (!creatingTask) {
+            setShowCreateTaskModal(false);
+            setCreateTaskError("");
+          }
+        }}
+        title="Create New Task"
+        description="Add a task to your project board."
+      >
+        <form onSubmit={handleCreateTask} className="space-y-4">
+          <Input
+            label="Task Title"
+            placeholder="Enter task title"
+            value={newTask.title}
+            onChange={(event) =>
+              setNewTask((current) => ({
+                ...current,
+                title: event.target.value,
+              }))
+            }
+            required
+          />
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-neutral">
+              Description
+            </label>
+
+            <textarea
+              value={newTask.description ?? ""}
+              onChange={(event) =>
+                setNewTask((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+              placeholder="Describe the task..."
+              rows={3}
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2.5 text-sm text-neutral outline-none focus:border-primary"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-neutral">
+              Priority
+            </label>
+
+            <select
+              value={newTask.priority ?? "MEDIUM"}
+              onChange={(event) =>
+                setNewTask((current) => ({
+                  ...current,
+                  priority: event.target.value as TaskPriority,
+                }))
+              }
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2.5 text-sm text-neutral outline-none focus:border-primary"
+            >
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-neutral">
+              Status
+            </label>
+
+            <select
+              value={newTask.status ?? "TODO"}
+              onChange={(event) =>
+                setNewTask((current) => ({
+                  ...current,
+                  status: event.target.value as TaskStatus,
+                }))
+              }
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2.5 text-sm text-neutral outline-none focus:border-primary"
+            >
+              <option value="TODO">To Do</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="IN_REVIEW">In Review</option>
+              <option value="DONE">Done</option>
+            </select>
+          </div>
+
+          {createTaskError && (
+            <p className="text-sm text-red-600">{createTaskError}</p>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateTaskModal(false)}
+              disabled={creatingTask}
+            >
+              Cancel
+            </Button>
+
+            <Button type="submit" disabled={creatingTask}>
+              {creatingTask ? "Creating..." : "Create Task"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 };
 
@@ -545,9 +730,10 @@ type KanbanColumnProps = {
   status: TaskStatus;
   label: string;
   tasks: Task[];
+  onAddTask: () => void;
 };
 
-const KanbanColumn = ({ status, label, tasks }: KanbanColumnProps) => {
+const KanbanColumn = ({ status, label, tasks, onAddTask }: KanbanColumnProps) => {
   return (
     <div className="min-w-72 rounded-xl bg-secondary/35 p-2.5">
       {/* Column header */}
@@ -565,6 +751,7 @@ const KanbanColumn = ({ status, label, tasks }: KanbanColumnProps) => {
           type="button"
           className="flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-paper hover:text-neutral"
           aria-label={`Add task to ${label}`}
+          onClick={onAddTask}
         >
           <PlusIcon />
         </button>
@@ -583,6 +770,7 @@ const KanbanColumn = ({ status, label, tasks }: KanbanColumnProps) => {
       <button
         type="button"
         className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium text-muted hover:bg-paper/70 hover:text-neutral"
+        onClick={onAddTask}
       >
         <PlusIcon />
         Add task
@@ -766,30 +954,6 @@ const CalendarIcon = () => (
   >
     <rect x="4" y="5" width="16" height="15" rx="2" />
     <path d="M8 3v4M16 3v4M4 10h16" />
-  </svg>
-);
-
-const CommentIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.7"
-    className="h-3.5 w-3.5"
-  >
-    <path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H11l-4 3v-3H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-3.5 w-3.5"
-  >
-    <path d="m5 12 4 4L19 6" />
   </svg>
 );
 

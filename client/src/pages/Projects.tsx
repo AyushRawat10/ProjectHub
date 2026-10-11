@@ -295,21 +295,6 @@ const SearchIcon = () => (
   </svg>
 );
 
-const UsersIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-4 w-4"
-  >
-    <path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20" />
-    <circle cx="9.5" cy="7" r="3" />
-    <path d="M17 11a3 3 0 1 0-1-5.8" />
-    <path d="M21 20v-1.5a4 4 0 0 0-2.8-3.8" />
-  </svg>
-);
-
 const PlusIcon = () => (
   <svg
     viewBox="0 0 24 24"
@@ -332,19 +317,6 @@ const ArrowUpRightIcon = () => (
   >
     <path d="M7 17 17 7" />
     <path d="M7 7h10v10" />
-  </svg>
-);
-
-const CheckCircleIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className="h-3.5 w-3.5"
-  >
-    <circle cx="12" cy="12" r="8.5" />
-    <path d="m8.5 12 2.3 2.3 4.7-5" />
   </svg>
 );
 
