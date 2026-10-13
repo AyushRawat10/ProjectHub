@@ -8,6 +8,7 @@ import projectMemberRoutes from "./project-members/project-member.routes.js";
 import taskRoutes from "./tasks/task.routes.js";
 import commentRoutes from "./comments/comments.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
+import userRoutes from "./users/user.routes.js";
 
 const app = express();
 
@@ -27,11 +28,12 @@ app.get("/", (req, res) => {
     })
 })
 
-app.use("/api/auth", authRoutes)
-app.use("/api/projects", projectRoutes)
-app.use("/api/projects", projectMemberRoutes)
-app.use("/api/projects", taskRoutes)
-app.use("/api/tasks", commentRoutes)
+app.use("/api/auth", authRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/projects", projectMemberRoutes);
+app.use("/api/projects", taskRoutes);
+app.use("/api/tasks", commentRoutes);
+app.use("/api/users", userRoutes);
 
 app.use(errorHandler)
 
