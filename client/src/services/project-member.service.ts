@@ -22,3 +22,12 @@ export const getProjectMembers = async (
 
   return response.data.members;
 };
+
+export const addProjectMember = async (
+  projectId: string,
+  userId: string
+): Promise<void> => {
+  await api.post(`/projects/${projectId}/members`, {
+    userId,
+  });
+};

@@ -4,13 +4,17 @@ import Sidebar from "../components/layouts/Sidebar";
 import Button from "../components/ui/Button";
 import AppHeader from "../components/layouts/AppHeader";
 import Badge from "../components/ui/Badge";
+import Modal from "../components/ui/Modal";
+import Input from "../components/ui/Input";
 
 import { getProjectById, type Project } from "../services/project.service";
 import {
+  addProjectMember,
   getProjectMembers,
   type ProjectMember,
 } from "../services/project-member.service";
 import { getProjectTasks, type Task } from "../services/task.service";
+import { searchAvailableUsers, type AvailableUser } from "../services/user.service";
 
 const ProjectDetails = () => {
   const { projectId } = useParams();
@@ -21,6 +25,15 @@ const ProjectDetails = () => {
 
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
+
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -95,6 +108,62 @@ const ProjectDetails = () => {
     
     loadTasks();
   }, [projectId]);
+
+  useEffect(() => {
+    if (!isInviteModalOpen || !projectId || userSearch.trim().length < 2) {
+      setAvailableUsers([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        setSearchLoading(true);
+        setInviteError("");
+
+        const users = await searchAvailableUsers(
+          projectId,
+          userSearch.trim()
+        );
+
+        setAvailableUsers(users);
+      } catch {
+        setAvailableUsers([]);
+        setInviteError("Failed to search users. Please try again.");
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [isInviteModalOpen, projectId, userSearch]);
+
+  const handleAddMember = async () => {
+    if (!projectId || !selectedUserId) {
+      return;
+    }
+
+    try {
+      setAddingMember(true);
+      setInviteError("");
+      setInviteSuccess("");
+
+      await addProjectMember(projectId, selectedUserId);
+
+      const updatedMembers = await getProjectMembers(projectId);
+      setMembers(updatedMembers);
+
+      setAvailableUsers([]);
+      setSelectedUserId("");
+      setUserSearch("");
+      setInviteSuccess("Member added successfully!");
+    } catch (error) {
+      console.error("Failed to add project member:", error);
+      setInviteError("Failed to add member. Please try again.");
+    } finally {
+      setAddingMember(false);
+    }
+  };
   
   if (loading) {
     return (
@@ -461,7 +530,18 @@ const ProjectDetails = () => {
                     )}
                   </div>
 
-                  <Button variant="secondary" className="mt-5 w-full">
+                  <Button
+                    variant="secondary"
+                    className="mt-5 w-full"
+                    onClick={() => {
+                      setIsInviteModalOpen(true);
+                      setUserSearch("");
+                      setAvailableUsers([]);
+                      setSelectedUserId("");
+                      setInviteError("");
+                      setInviteSuccess("");
+                    }}
+                  >
                     <PlusIcon />
                     Invite Member
                   </Button>
@@ -505,6 +585,108 @@ const ProjectDetails = () => {
           </div>
         </main>
       </div>
+
+      <Modal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        title="Invite Member"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Search for registered users by name or email to add them to this project.
+          </p>
+
+          <Input
+            type="text"
+            placeholder="Search by name or email..."
+            value={userSearch}
+            onChange={(event) => {
+              setUserSearch(event.target.value);
+              setSelectedUserId("");
+              setInviteSuccess("");
+            }}
+          />
+
+          {inviteError && (
+            <p className="text-sm text-red-600">{inviteError}</p>
+          )}
+
+          {searchLoading && (
+            <p className="text-sm text-muted">Searching users...</p>
+          )}
+
+          {!searchLoading &&
+            userSearch.trim().length >= 2 &&
+            availableUsers.length === 0 &&
+            !inviteError && (
+              <p className="text-sm text-muted">
+                No available users found.
+              </p>
+            )}
+
+          {availableUsers.length > 0 && (
+            <div className="max-h-64 space-y-2 overflow-y-auto">
+              {availableUsers.map((user) => (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => setSelectedUserId(user.id)}
+                  className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
+                    selectedUserId === user.id
+                      ? "border-primary bg-secondary/30"
+                      : "border-line hover:bg-paper"
+                  }`}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-secondary">
+                    {user.name
+                      .split(" ")
+                      .map((word) => word[0])
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase()}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-neutral">
+                      {user.name}
+                    </p>
+                    <p className="truncate text-xs text-muted">
+                      {user.email}
+                    </p>
+                  </div>
+
+                  {selectedUserId === user.id && (
+                    <span className="text-sm font-medium text-primary">
+                      Selected
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {inviteSuccess && (
+            <p className="text-sm text-green-700">{inviteSuccess}</p>
+          )}
+
+          <div className="flex justify-end gap-2 border-t border-line pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsInviteModalOpen(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant="primary"
+              disabled={!selectedUserId || addingMember}
+              onClick={handleAddMember}
+            >
+              {addingMember ? "Adding..." : "Add Member"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
