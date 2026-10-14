@@ -11,6 +11,7 @@ import { getProjectById, type Project } from "../services/project.service";
 import {
   addProjectMember,
   getProjectMembers,
+  removeProjectMember,
   type ProjectMember,
 } from "../services/project-member.service";
 import { getProjectTasks, type Task } from "../services/task.service";
@@ -25,6 +26,8 @@ const ProjectDetails = () => {
 
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
+
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
@@ -164,6 +167,34 @@ const ProjectDetails = () => {
       setAddingMember(false);
     }
   };
+
+  const handleRemoveMember = async (userId: string) => {
+    if(!projectId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to remove this member from the project?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setRemovingMemberId(userId);
+
+      await removeProjectMember(projectId, userId);
+
+      const updateMembers = await getProjectMembers(projectId);
+      setMembers(updateMembers);
+    } catch (error) {
+      console.error("Failed to remove project member:", error);
+      window.alert("Failed to remove member. Please try again.");
+    } finally {
+      setRemovingMemberId(null);
+    }
+  }
   
   if (loading) {
     return (
@@ -525,6 +556,8 @@ const ProjectDetails = () => {
                             .toUpperCase()}
                           name={member.name}
                           role="Member"
+                          onRemove={() => handleRemoveMember(member.id)}
+                          removing={removingMemberId === member.id}
                         />
                       ))
                     )}
@@ -752,10 +785,14 @@ const Member = ({
   initials,
   name,
   role,
+  onRemove,
+  removing = false,
 }: {
   initials: string;
   name: string;
   role: string;
+  onRemove?: () => void;
+  removing?: boolean;
 }) => {
   return (
     <div className="flex items-center gap-3">
@@ -763,9 +800,8 @@ const Member = ({
         {initials}
       </div>
 
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{name}</p>
-
         <p className="text-xs text-muted">{role}</p>
       </div>
 
@@ -773,6 +809,18 @@ const Member = ({
         <Badge variant="default" className="ml-auto px-2 py-1 text-[10px]">
           Owner
         </Badge>
+      )}
+
+      {onRemove && (
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onRemove}
+          disabled={removing}
+          className="shrink-0 text-xs font-medium text-red-600 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {removing ? "Removing..." : "Remove"}
+        </Button>
       )}
     </div>
   );
