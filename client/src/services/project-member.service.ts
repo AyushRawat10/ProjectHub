@@ -39,3 +39,13 @@ export const removeProjectMember = async (
 ): Promise<void> => {
   await api.delete(`/projects/${projectId}/members/${userId}`);
 };
+
+export const updateProjectMemberRole = async (
+  projectId: string,
+  userId: string,
+  role: "ADMIN" | "MEMBER"
+): Promise<void> => {
+  await api.patch(`/projects/${projectId}/members/${userId}/role`, {
+    role,
+  });
+};

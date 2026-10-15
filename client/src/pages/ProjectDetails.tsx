@@ -12,6 +12,7 @@ import {
   addProjectMember,
   getProjectMembers,
   removeProjectMember,
+  updateProjectMemberRole,
   type ProjectMember,
 } from "../services/project-member.service";
 import { getProjectTasks, type Task } from "../services/task.service";
@@ -191,6 +192,30 @@ const ProjectDetails = () => {
     } catch (error) {
       console.error("Failed to remove project member:", error);
       window.alert("Failed to remove member. Please try again.");
+    } finally {
+      setRemovingMemberId(null);
+    }
+  };
+
+  const handleUpdateMemberRole = async (
+    userId: string,
+    role: "ADMIN" | "MEMBER"
+  ) => {
+    if (!projectId) {
+      return;
+    }
+
+    try {
+      setRemovingMemberId(userId);
+      setError("");
+
+      await updateProjectMemberRole(projectId, userId, role);
+
+      const updatedMembers = await getProjectMembers(projectId);
+      setMembers(updatedMembers);
+    } catch (error) {
+      console.error("Failed to update member role:", error);
+      window.alert("Failed to update member role. Please try again.");
     } finally {
       setRemovingMemberId(null);
     }
@@ -556,6 +581,11 @@ const ProjectDetails = () => {
                             .toUpperCase()}
                           name={member.name}
                           role={member.role === "ADMIN" ? "Admin" : "Member"}
+                          memberRole={member.role}
+                          onRoleChange={(newRole) => 
+                            handleUpdateMemberRole(member.id, newRole)
+                          }
+                          updatingRole={removingMemberId === member.id}
                           onRemove={() => handleRemoveMember(member.id)}
                           removing={removingMemberId === member.id}
                         />
@@ -787,12 +817,18 @@ const Member = ({
   role,
   onRemove,
   removing = false,
+  memberRole,
+  onRoleChange,
+  updatingRole = false,
 }: {
   initials: string;
   name: string;
   role: string;
   onRemove?: () => void;
   removing?: boolean;
+  memberRole?: "ADMIN" | "MEMBER";
+  onRoleChange?: (role: "ADMIN" | "MEMBER") => void;
+  updatingRole?: boolean;
 }) => {
   return (
     <div className="flex items-center gap-3">
@@ -809,6 +845,21 @@ const Member = ({
         <Badge variant="default" className="ml-auto px-2 py-1 text-[10px]">
           Owner
         </Badge>
+      )}
+
+      {memberRole && onRoleChange && (
+        <select
+          value={memberRole}
+          onChange={(event) => 
+            onRoleChange(event.target.value as "ADMIN" | "MEMBER")
+          }
+          disabled={updatingRole}
+          aria-label={`Change ${name}'s role`}
+          className="rounded-lg border border-line bg-panel px-2 py-1.5 text-xs text-neutral disabled:opacity-50"
+        >
+          <option value="MEMBER">Member</option>
+          <option value="ADMIN">Admin</option>
+        </select>
       )}
 
       {onRemove && (
