@@ -555,7 +555,7 @@ const ProjectDetails = () => {
                             .join("")
                             .toUpperCase()}
                           name={member.name}
-                          role="Member"
+                          role={member.role === "ADMIN" ? "Admin" : "Member"}
                           onRemove={() => handleRemoveMember(member.id)}
                           removing={removingMemberId === member.id}
                         />

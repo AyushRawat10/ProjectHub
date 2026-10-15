@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import pool from "../config/database.js";
+import { getProjectRole } from "./project-member.permissions.js";
 
 export const addMemberController = async (req: Request, res: Response) => {
 	if (!req.userId) {
@@ -17,20 +18,20 @@ export const addMemberController = async (req: Request, res: Response) => {
 		});
 	}
 
-	const projectResult = await pool.query(
-		`
-            SELECT id
-            FROM projects
-            WHERE id = $1
-                AND owner_id = $2
-        `,
-		[projectId, req.userId]
-	);
+	if(projectId && typeof projectId === "string") {
+		const requesterRole = await getProjectRole(projectId, req.userId);
 
-	if (projectResult.rows.length === 0) {
-		return res.status(404).json({
-			message: "Project not found",
-		});
+		if(!requesterRole) {
+			return res.status(404).json({
+				message: "Project not found",
+			})
+		}
+
+		if (requesterRole !== "OWNER" && requesterRole !== "ADMIN") {
+			return res.status(403).json({
+				message: "Only the project owner or an admin can invite members",
+			})
+		}
 	}
 
 	if(userId === req.userId) {
@@ -138,6 +139,7 @@ export const getAllProjectMembersController = async (
                 u.name,
                 u.email,
                 u.avatar_url,
+				pm.role,
                 pm.joined_at
             FROM project_members pm
             JOIN users u
@@ -163,26 +165,54 @@ export const removeMemberController = async (req: Request, res: Response) => {
 
 	const { id: projectId, userId } = req.params;
 
-	const projectResult = await pool.query(
-		`
-            SELECT id
-            FROM projects
-            WHERE id = $1
-                AND owner_id = $2
-        `,
-		[projectId, req.userId]
-	);
+	if(!projectId || typeof projectId !== "string") {
+		return res.status(400).json({
+			message: "Project ID is required",
+		})
+	}
 
-	if (projectResult.rows.length === 0) {
+	const requesterRole = await getProjectRole(projectId, req.userId);
+
+	if (!requesterRole) {
 		return res.status(404).json({
-			message: "Project not found",
-		});
+			message: "Project not found"
+		})
+	}
+
+	if (requesterRole === "MEMBER") {
+		return res.status(403).json({
+			message: "Only the project owner or an admin can remove members",
+		})
 	}
 
 	if (userId === req.userId) {
 		return res.status(400).json({
-			message: "Project owner cannot be removed",
+			message: "You cannot remove yourself using this endpoint",
 		});
+	}
+
+	if (requesterRole === "ADMIN") {
+		const targetResult = await pool.query(
+			`
+				SELECT role
+				FROM project_members
+				WHERE project_id = $1
+					AND user_id = $2
+			`,
+			[projectId, userId]
+		);
+
+		if (targetResult.rows.length === 0) {
+			return res.status(404).json({
+				message: "Member not found in this project",
+			});
+		}
+
+		if (targetResult.rows[0].role !== "MEMBER") {
+			return res.status(403).json({
+				message: "Admins can only remove regular members",
+			});
+		}
 	}
 
 	const result = await pool.query(

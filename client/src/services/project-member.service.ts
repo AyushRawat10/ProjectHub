@@ -5,6 +5,7 @@ export type ProjectMember = {
   name: string;
   email: string;
   avatar_url: string | null;
+  role: "ADMIN" | "MEMBER";
   joined_at: string;
 };
 
