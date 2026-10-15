@@ -235,3 +235,79 @@ export const removeMemberController = async (req: Request, res: Response) => {
 		message: "Member removed successfully",
 	});
 };
+
+export const updateMemberRoleController = async (
+	req: Request,
+	res: Response
+) => {
+	if (!req.userId) {
+		return res.status(401).json({
+			message: "Authentication required",
+		});
+	}
+
+	const { id: projectId, userId } = req.params;
+	const { role } = req.body;
+
+	if (role !== "ADMIN" && role !== "MEMBER") {
+		return res.status(400).json({
+			message: "Role must be ADMIN or MEMBER",
+		});
+	}
+
+	try {
+		const projectResult = await pool.query(
+			`
+				SELECT id 
+				FROM projects
+				WHERE id = $1
+					AND owner_id = $2
+			`,
+			[projectId, req.userId]
+		);
+
+		if (projectResult.rows.length === 0) {
+			return res.status(403).json({
+				message: "Only the project owner can change member roles",
+			})
+		}
+
+		const targetResult = await pool.query(
+			`
+				SELECT user_id
+				FROM project_members
+				WHERE project_id = $1
+					AND user_id = $2
+			`,
+			[projectId, userId]
+		);
+
+		if (targetResult.rows.length === 0) {
+			return res.status(404).json({
+				message: "Member not found in this project",
+			})
+		}
+
+		const result = await pool.query(
+			`
+				UPDATE project_members
+				SET role = $3
+				WHERE project_id = $1
+					AND user_id = $2
+				RETURNING project_id, user_id, role
+			`,
+			[projectId, userId, role]
+		);
+
+		return res.status(200).json({
+			message: "Member role updated successfully",
+			member: result.rows[0],
+		});
+	} catch (error) {
+		console.error("Update member role error:", error);
+
+		return res.status(500).json({
+			message: "Internal server error",
+		})
+	}
+}
