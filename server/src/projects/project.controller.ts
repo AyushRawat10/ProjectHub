@@ -40,16 +40,26 @@ export const getMyAllProjectController = async (req: Request, res: Response) => 
 
     const result = await pool.query(
         `
-            SELECT id, owner_id, name, description, created_at, updated_at
-            FROM projects
-            WHERE owner_id = $1
-            ORDER BY created_at DESC
+            SELECT DISTINCT
+                p.id,
+                p.owner_id, 
+                p.name, 
+                p.description, 
+                p.created_at, 
+                p.updated_at
+            FROM projects p
+            LEFT JOIN project_members pm
+                ON p.id = pm.project_id
+            WHERE 
+                p.owner_id = $1
+                OR pm.user_id = $1
+            ORDER BY p.created_at DESC
         `,
         [req.userId]
     )
 
     return res.status(200).json({
-        message: "Here is your all projects",
+        message: "Here are your projects",
         projects: result.rows,
     })
 }
@@ -71,8 +81,13 @@ export const getProjectById = async (req: Request, res: Response) => {
                 p.name, 
                 p.description, 
                 p.created_at, 
-                p.updated_at
+                p.updated_at,
+                u.name AS owner_name,
+                u.email AS owner_email,
+                u.avatar_url AS owner_avatar_url
             FROM projects p
+            JOIN users u 
+                ON u.id = p.owner_id
             WHERE p.id = $1
                 AND (
                     p.owner_id = $2
