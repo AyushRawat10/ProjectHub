@@ -7,6 +7,9 @@ export type Project = {
   description: string | null;
   created_at: string;
   updated_at: string;
+  owner_name: string;
+  owner_email: string;
+  owner_avatar_url: string | null;
 };
 
 type GetProjectsResponse = {

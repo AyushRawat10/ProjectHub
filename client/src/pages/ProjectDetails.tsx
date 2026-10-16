@@ -17,9 +17,11 @@ import {
 } from "../services/project-member.service";
 import { getProjectTasks, type Task } from "../services/task.service";
 import { searchAvailableUsers, type AvailableUser } from "../services/user.service";
+import { useAuth } from "../context/AuthContext";
 
 const ProjectDetails = () => {
   const { projectId } = useParams();
+  const { user } = useAuth();
 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -565,31 +567,60 @@ const ProjectDetails = () => {
                   <div className="space-y-3">
                     {membersLoading ? (
                       <p className="text-sm text-muted">Loading members...</p>
-                    ) : members.length === 0 ? (
-                      <p className="text-sm text-muted">
-                        No members have been added yet.
-                      </p>
                     ) : (
-                      members.map((member) => (
-                        <Member
-                          key={member.id}
-                          initials={member.name
-                            .split(" ")
-                            .map((word) => word[0])
-                            .slice(0, 2)
-                            .join("")
-                            .toUpperCase()}
-                          name={member.name}
-                          role={member.role === "ADMIN" ? "Admin" : "Member"}
-                          memberRole={member.role}
-                          onRoleChange={(newRole) => 
-                            handleUpdateMemberRole(member.id, newRole)
-                          }
-                          updatingRole={removingMemberId === member.id}
-                          onRemove={() => handleRemoveMember(member.id)}
-                          removing={removingMemberId === member.id}
-                        />
-                      ))
+                      <>
+                        {project && (
+                          <Member
+                            key={`owner-${project.id}`}
+                            initials={
+                              project.owner_name
+                                .split(" ")
+                                .map((word) => word[0])
+                                .slice(0, 2)
+                                .join("")
+                                .toUpperCase()
+                            }
+                            name={project.owner_name}
+                            role="Owner"
+                          />
+                        )}
+
+                        {members.filter((member) => member.id !== project?.owner_id).length === 0 ? (
+                          <p className="text-sm text-muted">
+                            No other members have been added yet.
+                          </p>
+                        ) : (
+                          members
+                            .filter((member) => member.id !== project?.owner_id)
+                            .map((member) => (
+                              <Member
+                                key={member.id}
+                                initials={member.name
+                                  .split(" ")
+                                  .map((word) => word[0])
+                                  .slice(0, 2)
+                                  .join("")
+                                  .toUpperCase()}
+                                name={member.name}
+                                role={member.role === "ADMIN" ? "Admin" : "Member"}
+                                memberRole={
+                                  project?.owner_id === user?.id
+                                    ? member.role
+                                    : undefined
+                                }
+                                onRoleChange={
+                                  project?.owner_id === user?.id
+                                    ? (newRole) =>
+                                        handleUpdateMemberRole(member.id, newRole)
+                                    : undefined
+                                }
+                                updatingRole={removingMemberId === member.id}
+                                onRemove={() => handleRemoveMember(member.id)}
+                                removing={removingMemberId === member.id}
+                              />
+                          ))
+                        )}
+                      </>
                     )}
                   </div>
 
