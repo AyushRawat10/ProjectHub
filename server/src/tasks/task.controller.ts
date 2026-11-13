@@ -348,12 +348,21 @@ export const updateTaskController = async (req: Request, res: Response) => {
 
 	const taskResult = await pool.query(
 		`
-            SELECT 1
-            FROM tasks
-            WHERE id = $1
-                AND project_id = $2
+            SELECT 
+                t.creator_id,
+                t.assignee_id,
+                p.owner_id,
+                pm.role AS member_role
+            FROM tasks t
+            JOIN projects p
+                ON p.id = t.project_id
+            LEFT JOIN project_members pm
+                ON pm.project_id = p.id
+                AND pm.user_id = $3
+            WHERE t.id = $1
+                AND t.project_id = $2
         `,
-		[taskId, projectId]
+		[taskId, projectId, req.userId]
 	);
 
 	if (taskResult.rows.length === 0) {
@@ -361,6 +370,26 @@ export const updateTaskController = async (req: Request, res: Response) => {
 			message: "Task not found",
 		});
 	}
+
+    const task = taskResult.rows[0];
+
+    const isProjectOwner = task.owner_id === req.userId;
+    const isProjectAdmin = task.member_role === "ADMIN";
+
+    const isTaskCreator = task.creator_id === req.userId;
+    const isTaskAssignee = task.assignee_id === req.userId;
+
+    const canEditTask = 
+        isProjectOwner || 
+        isProjectAdmin || 
+        isTaskCreator || 
+        isTaskAssignee;
+
+    if (!canEditTask) {
+        return res.status(403).json({
+            message: "You do not have permission to edit this task",
+        })
+    }
 
 	if (assigneeId) {
 		const memberResult = await pool.query(
@@ -391,15 +420,33 @@ export const updateTaskController = async (req: Request, res: Response) => {
 		`
             UPDATE tasks
             SET 
-                title = COALESCE($1, title),
-                description = COALESCE($2, description),
-                assignee_id = COALESCE($3, assignee_id),
-                status = COALESCE($4, status)::task_status,
-                priority = COALESCE($5, priority)::task_priority,
-                due_date = COALESCE($6, due_date),
+                title = CASE
+                    WHEN $1::boolean THEN $2
+                    ELSE title
+                END,
+                description = CASE
+                    WHEN $3::boolean THEN $4
+                    ELSE description
+                END,
+                assignee_id = CASE
+                    WHEN $5::boolean THEN $6::uuid
+                    ELSE assignee_id
+                END,
+                status = CASE
+                    WHEN $7::boolean THEN $8::task_status
+                    ELSE status
+                END,
+                priority = CASE
+                    WHEN $9::boolean THEN $10::task_priority
+                    ELSE priority
+                END,
+                due_date = CASE
+                    WHEN $11::boolean THEN $12::date
+                    ELSE due_date
+                END,
                 updated_at = NOW()
-            WHERE id = $7
-                AND project_id = $8
+            WHERE id = $13
+                AND project_id = $14
 
             RETURNING
                 id, 
@@ -415,12 +462,12 @@ export const updateTaskController = async (req: Request, res: Response) => {
                 updated_at
         `,
 		[
-			title ?? null,
-			description ?? null,
-			assigneeId ?? null,
-			status ?? null,
-			priority ?? null,
-			dueDate ?? null,
+			title !== undefined, title ?? null,
+			description !== undefined, description ?? null,
+			assigneeId !== undefined, assigneeId ?? null,
+			status !== undefined, status ?? null,
+			priority !== undefined, priority ?? null,
+			dueDate !== undefined, dueDate ?? null,
 			taskId,
 			projectId,
 		]
@@ -453,15 +500,15 @@ export const deleteTaskController = async (req: Request, res: Response) => {
                         WHERE p.id = t.project_id
                             AND p.owner_id = $3
                     )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM project_members pm
+                        WHERE pm.project_id = t.project_id
+                            AND pm.user_id = $3
+                            AND pm.role = 'ADMIN'
+                    )
                     OR t.creator_id = $3
-                        AND EXISTS (
-                            SELECT 1
-                            FROM project_members pm
-                            WHERE pm.project_id = t.project_id
-                                AND pm.user_id = $3
-                        )
                 )
-
             RETURNING 
                 t.id,
                 t.project_id,
