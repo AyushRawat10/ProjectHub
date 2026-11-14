@@ -9,12 +9,12 @@ const migrate = async () => {
 
 	try {
 		await client.query(`
-      CREATE TABLE IF NOT EXISTS schema_migrations (
-        id SERIAL PRIMARY KEY,
-        filename VARCHAR(255) NOT NULL UNIQUE,
-        executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-    `);
+			CREATE TABLE IF NOT EXISTS schema_migrations (
+				id SERIAL PRIMARY KEY,
+				filename VARCHAR(255) NOT NULL UNIQUE,
+				executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+			);
+		`);
 
 		const files = await fs.readdir(migrationsDir);
 

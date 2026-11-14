@@ -37,7 +37,14 @@ export type CreateTaskData = {
   dueDate?: string;
 };
 
-export type UpdateTaskData = Partial<CreateTaskData>;
+export type UpdateTaskData = {
+  title?: string;
+  description?: string | null;
+  assigneeId?: string | null;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  dueDate?: string | null;
+};
 
 type GetTasksResponse = {
   message: string;

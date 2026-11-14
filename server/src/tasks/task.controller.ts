@@ -12,12 +12,6 @@ export const createTaskController = async (req: Request, res: Response) => {
 	const { title, description, assigneeId, status, priority, dueDate } =
 		req.body;
 
-	if (!title) {
-		return res.status(400).json({
-			message: "Task title is required",
-		});
-	}
-
 	const accessResult = await pool.query(
 		`
             SELECT 1

@@ -5,6 +5,10 @@ import AppHeader from "../components/layouts/AppHeader";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 
+import { useEffect, useState } from "react";
+import { getTaskById } from "../services/task.service";
+import type { Task } from "../services/task.service";
+
 type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
 
 type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -44,21 +48,83 @@ const TaskDetails = () => {
 
   const projectName = "ProjectHub";
 
-  const task = {
-    id: taskId ?? "PH-115",
-    title: "Implement JWT refresh token flow",
-    description:
-      "Implement a secure refresh token flow for authenticated users. The system should issue a new access token when the current access token expires while keeping the refresh token protected.",
-    status: "IN_PROGRESS" as TaskStatus,
-    priority: "URGENT" as Priority,
-    assignee: "Rahul Kumar",
-    assigneeInitials: "RK",
-    creator: "Ayush Rawat",
-    creatorInitials: "AR",
-    dueDate: "October 20, 2026",
-    createdAt: "October 12, 2026",
-    subtasks: "3 / 4",
+  const [taskData, setTaskData] = useState<Task | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchTask = async () => {
+      if (!projectId || !taskId) {
+        setError("Invalid project or task ID");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getTaskById(projectId, taskId);
+        setTaskData(data);
+      } catch (err) {
+        console.error("Failed to fetch task:", err);
+        setError("Failed to load task details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTask();
+  }, [projectId, taskId]);
+
+  if(loading) {
+    return <div className="p-8 text-center">Loading task....</div>
+  }
+
+  if(error || !taskData) {
+    return (
+      <div className="p-8 text-center text-red-600">
+        {error || "Task not found"}
+      </div>
+    )
+  }
+
+  const getInitials = (name: string | null) => {
+    if (!name) return "--";
+
+    return name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase();
   };
+
+  const task = {
+    id: taskData.id,
+    title: taskData.title,
+    description: taskData.description ?? "No description provided.",
+    status: taskData.status,
+    priority: taskData.priority,
+    assignee: taskData.assignee_name ?? "Unassigned",
+    assigneeInitials: getInitials(taskData.assignee_name),
+    creator: taskData.creator_name,
+    creatorInitials: getInitials(taskData.creator_name),
+    dueDate: taskData.due_date
+      ? new Date(taskData.due_date).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+      : "No due date",
+    createdAt: new Date(taskData.created_at).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }),
+    subtasks: "0 / 0",
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-paper text-neutral">
