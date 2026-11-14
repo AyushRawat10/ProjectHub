@@ -4,10 +4,14 @@ import Sidebar from "../components/layouts/Sidebar";
 import AppHeader from "../components/layouts/AppHeader";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
+import Modal from "../components/ui/Modal";
+import Input from "../components/ui/Input";
 
 import { useEffect, useState } from "react";
-import { getTaskById } from "../services/task.service";
+import { getTaskById, updateTask } from "../services/task.service";
 import type { Task } from "../services/task.service";
+
+import { useAuth } from "../context/AuthContext";
 
 type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
 
@@ -52,6 +56,19 @@ const TaskDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    status: "TODO" as TaskStatus,
+    priority: "MEDIUM" as Priority,
+    dueDate: "",
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+
   useEffect(() => {
     const fetchTask = async () => {
       if (!projectId || !taskId) {
@@ -76,6 +93,50 @@ const TaskDetails = () => {
 
     fetchTask();
   }, [projectId, taskId]);
+
+  const openEditModal = () => {
+    if (!taskData) return;
+
+    setEditForm({
+      title: taskData.title,
+      description: taskData.description ?? "",
+      status: taskData.status,
+      priority: taskData.priority,
+      dueDate: taskData.due_date
+        ? taskData.due_date.slice(0, 10)
+        : "",
+    });
+
+    setEditError("");
+    setIsEditModalOpen(true);
+  }
+
+  const handleUpdateTask = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!projectId || !taskId) return;
+
+    try {
+      setIsSaving(true);
+      setEditError("");
+
+      const updatedTask = await updateTask(projectId, taskId, {
+        title: editForm.title,
+        description: editForm.description.trim() || null,
+        status: editForm.status,
+        priority: editForm.priority,
+        dueDate: editForm.dueDate || null,
+      });
+      
+      setTaskData(updatedTask);
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error("Failed to update task:", err);
+      setEditError("Failed to update task. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if(loading) {
     return <div className="p-8 text-center">Loading task....</div>
@@ -204,7 +265,11 @@ const TaskDetails = () => {
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
-                    <Button variant="outline" className="px-3 py-2">
+                    <Button 
+                    variant="outline" 
+                    className="px-3 py-2"
+                    onClick={openEditModal}
+                    >
                       <EditIcon />
                       Edit
                     </Button>
@@ -257,7 +322,7 @@ const TaskDetails = () => {
                     </h2>
 
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       className="px-0 py-0 text-sm font-medium text-primary hover:bg-transparent hover:text-tertiary"
                     >
                       Edit
@@ -468,6 +533,127 @@ const TaskDetails = () => {
           </div>
         </main>
       </div>
+
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Task"
+        description="Update the details of your task."
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditModalOpen(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant="primary"
+              onClick={() => {
+                const form = document.getElementById(
+                  "edit-task-form"
+                ) as HTMLFormElement;
+
+                form?.requestSubmit();
+              }}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="edit-task-form"
+          onSubmit={handleUpdateTask}
+          className="space-y-4"
+        >
+          {editError && (
+            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+              {editError}
+            </p>
+          )}
+
+          <Input
+            label="Task Title"
+            value={editForm.title}
+            onChange={(e) => 
+              setEditForm({ ...editForm, title: e.target.value })
+            }
+            required
+          />
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-neutral">
+              Description
+            </label>
+
+            <textarea
+              value={editForm.description}
+              onChange={(e) => 
+                setEditForm({ ...editForm, description: e.target.value })
+              }
+              rows={4}
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2.5 text-sm outline-none focus:border-primary"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-neutral">
+              Status
+            </label>
+
+            <select
+              value={editForm.status}
+              onChange={(e) => 
+                setEditForm({ 
+                  ...editForm, 
+                  status: e.target.value as TaskStatus,
+                })
+              }
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2.5 text-sm"
+            >
+              <option value="TODO">Todo</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="IN_REVIEW">In Review</option>
+              <option value="DONE">Done</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-neutral">
+              Priority
+            </label>
+
+            <select
+              value={editForm.priority}
+              onChange={(e) => 
+                setEditForm({ 
+                  ...editForm, 
+                  priority: e.target.value as Priority,
+                })
+              }
+              className="w-full rounded-lg border border-line bg-panel px-3 py-2.5 text-sm"
+            >
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+          </div>
+
+          <Input
+            label="Due Date"
+            type="date"
+            value={editForm.dueDate}
+            onChange={(e) =>
+              setEditForm({ ...editForm, dueDate: e.target.value })
+            }
+          />
+        </form>
+      </Modal>
     </div>
   );
 };
