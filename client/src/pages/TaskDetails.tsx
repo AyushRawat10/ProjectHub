@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useNavigate } from "react-router";
 import Sidebar from "../components/layouts/Sidebar";
 import AppHeader from "../components/layouts/AppHeader";
 import Badge from "../components/ui/Badge";
@@ -8,7 +8,7 @@ import Modal from "../components/ui/Modal";
 import Input from "../components/ui/Input";
 
 import { useEffect, useState } from "react";
-import { getTaskById, updateTask } from "../services/task.service";
+import { getTaskById, updateTask, deleteTask } from "../services/task.service";
 import type { Task } from "../services/task.service";
 
 import { getProjectMembers } from "../services/project-member.service";
@@ -55,6 +55,7 @@ const comments: Comment[] = [
 
 const TaskDetails = () => {
   const { projectId, taskId } = useParams();
+  const navigate = useNavigate();
 
   const projectName = "ProjectHub";
 
@@ -76,10 +77,20 @@ const TaskDetails = () => {
   const [editError, setEditError] = useState("");
 
   const [members, setMembers] = useState<ProjectMember[]>([]);
+
   const [isAssigneeModalOpen, setIsAssigneeModalOpen] = useState(false);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState("");
   const [isAssigning, setIsAssigning] = useState(false);
   const [assigneeError, setAssigneeError] = useState("");
+
+  const [isDueDateModalOpen, setIsDueDateModalOpen] = useState(false);
+  const [selectedDueDate, setSelectedDueDate] = useState("");
+  const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
+  const [dueDateError, setDueDateError] = useState("");
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const [project, setProject] = useState<Project | null>(null);
 
@@ -154,6 +165,17 @@ const TaskDetails = () => {
     setIsAssigneeModalOpen(true);
   }
 
+  const openDueDateModal = () => {
+    if (!taskData) return;
+
+    setSelectedDueDate(
+      taskData.due_date ? taskData.due_date.slice(0, 10) : ""
+    );
+
+    setDueDateError("");
+    setIsDueDateModalOpen(true);
+  }
+
   const handleAssignTask = async (e: React.FormEvent<HTMLElement>) => {
     e.preventDefault();
 
@@ -168,7 +190,7 @@ const TaskDetails = () => {
       });
 
       const refreshedTask = await getTaskById(projectId, taskId);
-      
+
       setTaskData(refreshedTask);
       setIsAssigneeModalOpen(false);
     } catch (error) {
@@ -176,6 +198,50 @@ const TaskDetails = () => {
       setAssigneeError("Failed to update assignee. Please try again.");
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleUpdateDueDate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!projectId || !taskId) return;
+
+    try {
+      setIsUpdatingDueDate(true);
+      setDueDateError("");
+
+      await updateTask(projectId, taskId, {
+        dueDate: selectedDueDate || null,
+      });
+
+      const refreshedTask = await getTaskById(projectId, taskId);
+
+      setTaskData(refreshedTask);
+      setIsDueDateModalOpen(false);
+
+    } catch (error) {
+      console.error("Failed to update due date:", error);
+      setDueDateError("Failed to update due date. Please try again.");
+    } finally {
+      setIsUpdatingDueDate(false);
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!projectId || !taskId) return;
+
+    try {
+      setIsDeleting(true);
+      setDeleteError("");
+
+      await deleteTask(projectId, taskId);
+
+      navigate(`/projects/${projectId}`);
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      setDeleteError("Failed to delete task. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -582,6 +648,7 @@ const TaskDetails = () => {
 
                     <Button
                       variant="ghost"
+                      onClick={openDueDateModal}
                       className="w-full justify-start px-3 py-2.5 text-left"
                     >
                       <CalendarIcon />
@@ -590,6 +657,10 @@ const TaskDetails = () => {
 
                     <Button
                       variant="danger"
+                      onClick={() => {
+                        setDeleteError("");
+                        setIsDeleteModalOpen(true);
+                      }}
                       className="w-full justify-start px-3 py-2.5 text-left"
                     >
                       <TrashIcon />
@@ -776,6 +847,91 @@ const TaskDetails = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={isDueDateModalOpen}
+        onClose={() => setIsDueDateModalOpen(false)}
+        title="Change Due Date"
+      >
+        <form onSubmit={handleUpdateDueDate} className="space-y-5">
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Select Due Date
+            </label>
+
+            <Input
+              type="date"
+              value={selectedDueDate}
+              onChange={(e) => setSelectedDueDate(e.target.value)}
+            />
+          </div>
+
+          {dueDateError && (
+            <p className="text-sm text-red-600">{dueDateError}</p>
+          )}
+
+          <div className="flex justify-between gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedDueDate("")}
+            >
+              Clear Date
+            </Button>
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDueDateModalOpen(false)}
+              >
+                Cancel
+              </Button>
+
+              <Button type="submit" disabled={isUpdatingDueDate}>
+                {isUpdatingDueDate ? "Saving..." : "Save Date"}
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Delete Task"
+      >
+        <div className="space-y-5">
+          <p className="text-sm text-muted">
+            Are you sure you want to delete this task?
+            This action cannot be undone.
+          </p>
+
+          {deleteError && (
+            <p className="text-sm text-red-600">{deleteError}</p>
+          )}
+
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleDeleteTask}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Task"}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
