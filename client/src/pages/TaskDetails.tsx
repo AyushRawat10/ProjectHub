@@ -11,6 +11,12 @@ import { useEffect, useState } from "react";
 import { getTaskById, updateTask } from "../services/task.service";
 import type { Task } from "../services/task.service";
 
+import { getProjectMembers } from "../services/project-member.service";
+import type { ProjectMember } from "../services/project-member.service";
+
+import { getProjectById } from "../services/project.service";
+import type { Project } from "../services/project.service";
+
 import { useAuth } from "../context/AuthContext";
 
 type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
@@ -69,6 +75,14 @@ const TaskDetails = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [isAssigneeModalOpen, setIsAssigneeModalOpen] = useState(false);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState("");
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [assigneeError, setAssigneeError] = useState("");
+
+  const [project, setProject] = useState<Project | null>(null);
+
   useEffect(() => {
     const fetchTask = async () => {
       if (!projectId || !taskId) {
@@ -94,6 +108,27 @@ const TaskDetails = () => {
     fetchTask();
   }, [projectId, taskId]);
 
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      if (!projectId) return;
+
+      try {
+        const [projectData, membersData] = await Promise.all([
+          getProjectById(projectId),
+          getProjectMembers(projectId),
+        ]);
+
+        setProject(projectData);
+        setMembers(membersData);
+      } catch (error) {
+        console.error("Failed to fetch project data:", error);
+        setAssigneeError("Failed to load project members.");
+      }
+    };
+
+    fetchProjectData();
+  }, [projectId]);
+
   const openEditModal = () => {
     if (!taskData) return;
 
@@ -109,6 +144,39 @@ const TaskDetails = () => {
 
     setEditError("");
     setIsEditModalOpen(true);
+  }
+
+  const openAssigneeModal = () => {
+    if (!taskData) return;
+
+    setSelectedAssigneeId(taskData.assignee_id ?? "");
+    setAssigneeError("");
+    setIsAssigneeModalOpen(true);
+  }
+
+  const handleAssignTask = async (e: React.FormEvent<HTMLElement>) => {
+    e.preventDefault();
+
+    if (!projectId || !taskId) return;
+
+    try {
+      setIsAssigning(true);
+      setAssigneeError("");
+
+      const updatedTask = await updateTask(projectId, taskId, {
+        assigneeId: selectedAssigneeId || null,
+      });
+
+      const refreshedTask = await getTaskById(projectId, taskId);
+      
+      setTaskData(refreshedTask);
+      setIsAssigneeModalOpen(false);
+    } catch (error) {
+      console.error("Failed to updated assignee:", error);
+      setAssigneeError("Failed to update assignee. Please try again.");
+    } finally {
+      setIsAssigning(false);
+    }
   }
 
   const handleUpdateTask = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -505,6 +573,7 @@ const TaskDetails = () => {
 
                     <Button
                       variant="ghost"
+                      onClick={openAssigneeModal}
                       className="w-full justify-start px-3 py-2.5 text-left"
                     >
                       <UserPlusIcon />
@@ -652,6 +721,60 @@ const TaskDetails = () => {
               setEditForm({ ...editForm, dueDate: e.target.value })
             }
           />
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isAssigneeModalOpen}
+        onClose={() => setIsAssigneeModalOpen(false)}
+        title="Change Assignee"
+      >
+        <form onSubmit={handleAssignTask} className="space-y-5">
+          <div>
+            <label className="mb-2 block text-sm font-medium">
+              Assign task to
+            </label>
+
+            <select
+              value={selectedAssigneeId}
+              onChange={(e) => setSelectedAssigneeId(e.target.value)}
+              className="w-full rounded-lg border border-line bg-panel px-4 py-3 text-sm outline-none focus:border-primary"
+            >
+              <option value="">Unassigned</option>
+
+              {project && (
+                <option value={project.owner_id}>
+                  {project.owner_name} (Project Owner)
+                </option>
+              )}
+
+              {members
+                .filter((member) => member.id !== project?.owner_id)
+                .map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name} ({member.role})
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          {assigneeError && (
+            <p className="text-sm text-red-600">{assigneeError}</p>
+          )}
+
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAssigneeModalOpen(false)}
+            >
+              Cancel
+            </Button>
+
+            <Button type="submit" disabled={isAssigning}>
+              {isAssigning ? "Saving..." : "Save Assignee"}
+            </Button>
+          </div>
         </form>
       </Modal>
     </div>
