@@ -177,22 +177,38 @@ export const updateCommentsController = async (req: Request, res: Response) => {
 
 	const result = await pool.query(
 		`
-            UPDATE comments
+            UPDATE comments AS c
             SET
                 content = $1,
                 updated_at = NOW()
-            WHERE id = $2
-                AND task_id = $3
-                AND user_id = $4
+			FROM tasks t
+			JOIN projects p
+				ON p.id = t.project_id
+			LEFT JOIN project_members pm
+				ON pm.project_id = p.id
+				AND pm.user_id = $4
+            WHERE c.id = $2
+                AND c.task_id = $3
+                AND c.user_id = $4
+				AND t.id = c.task_id
+				AND (
+					p.owner_id = $4
+					OR pm.user_id IS NOT NULL
+				)
             RETURNING
-                id,
-                task_id,
-                user_id,
-                content,
-                created_at,
-                updated_at
+                c.id,
+                c.task_id,
+                c.user_id,
+                c.content,
+                c.created_at,
+                c.updated_at
         `,
-		[content.trim(), commentId, taskId, req.userId]
+		[
+			content.trim(), 
+			commentId, 
+			taskId, 
+			req.userId,
+		]
 	);
 
 	if (result.rows.length === 0) {
@@ -219,16 +235,27 @@ export const deleteCommentsController = async (req: Request, res: Response) => {
 
 	const result = await pool.query(
 		`
-            DELETE FROM comments
-            WHERE id = $1
-                AND task_id = $2
-                AND user_id = $3
-            RETURNING
-                id,
-                task_id,
-                user_id,
-                content
-        `,
+			DELETE FROM comments AS c
+			USING tasks t
+			JOIN projects p
+				ON p.id = t.project_id
+			LEFT JOIN project_members pm
+				ON pm.project_id = p.id
+				AND pm.user_id = $3
+			WHERE c.id = $1
+				AND c.task_id = $2
+				AND c.user_id = $3
+				AND t.id = c.task_id
+				AND (
+					p.owner_id = $3
+					OR pm.user_id IS NOT NULL
+				)
+			RETURNING
+				c.id,
+				c.task_id,
+				c.user_id,
+				c.content
+		`,
 		[commentId, taskId, req.userId]
 	);
 
