@@ -17,41 +17,14 @@ import type { ProjectMember } from "../services/project-member.service";
 import { getProjectById } from "../services/project.service";
 import type { Project } from "../services/project.service";
 
+import { getTaskComments, createComment, updateComment, deleteComment } from "../services/comment.service";
+import type { Comment as TaskComment } from "../services/comment.service";
+
 import { useAuth } from "../context/AuthContext";
 
 type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
 
 type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-
-type Comment = {
-  id: string;
-  name: string;
-  initials: string;
-  role: string;
-  message: string;
-  time: string;
-};
-
-const comments: Comment[] = [
-  {
-    id: "1",
-    name: "Rahul Kumar",
-    initials: "RK",
-    role: "Developer",
-    message:
-      "I have completed the refresh token endpoint. The remaining work is handling token rotation and invalid sessions.",
-    time: "24 minutes ago",
-  },
-  {
-    id: "2",
-    name: "Ayush Rawat",
-    initials: "AR",
-    role: "Project Owner",
-    message:
-      "Please make sure the refresh token is stored securely and the cookie configuration is correct.",
-    time: "12 minutes ago",
-  },
-];
 
 const TaskDetails = () => {
   const { projectId, taskId } = useParams();
@@ -93,6 +66,11 @@ const TaskDetails = () => {
   const [deleteError, setDeleteError] = useState("");
 
   const [project, setProject] = useState<Project | null>(null);
+
+  const [comments, setComments] = useState<TaskComment[]>([]);
+  const [commentContent, setCommentContent] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState("");
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -139,6 +117,23 @@ const TaskDetails = () => {
 
     fetchProjectData();
   }, [projectId]);
+
+  useEffect(() => {
+    if (!taskId) return;
+
+    const fetchComments = async () => {
+      try {
+        setCommentError("");
+
+        const data = await getTaskComments(taskId);
+        setComments(data);
+      } catch {
+        setCommentError("Failed to load comments. Please try again.");
+      }
+    };
+
+    fetchComments();
+  }, [taskId]);
 
   const openEditModal = () => {
     if (!taskData) return;
@@ -963,23 +958,30 @@ const Person = ({ initials, name }: { initials: string; name: string }) => {
   );
 };
 
-const CommentItem = ({ comment }: { comment: Comment }) => {
+const CommentItem = ({ comment }: { comment: TaskComment }) => {
+  const initials = comment.user_name
+    .split(" ")
+    .map((name) => name[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const time = new Date(comment.created_at).toLocaleString();
+
   return (
     <article className="flex gap-3">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-tertiary">
-        {comment.initials}
+        {initials}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="text-sm font-semibold">{comment.name}</span>
+          <span className="text-sm font-semibold">{comment.user_name}</span>
 
-          <span className="text-xs text-muted">{comment.role}</span>
-
-          <span className="text-xs text-muted">• {comment.time}</span>
+          <span className="text-xs text-muted">• {time}</span>
         </div>
 
-        <p className="mt-2 text-sm leading-6 text-muted">{comment.message}</p>
+        <p className="mt-2 text-sm leading-6 text-muted">{comment.content}</p>
       </div>
     </article>
   );
