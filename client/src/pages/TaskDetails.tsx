@@ -267,6 +267,25 @@ const TaskDetails = () => {
     }
   };
 
+  const handleAddComment = async () => {
+    if (!taskId || !commentContent.trim()) return;
+
+    try {
+      setIsSubmittingComment(true);
+      setCommentError("");
+
+      await createComment(taskId, commentContent.trim());
+
+      const updatedComments = await getTaskComments(taskId);
+      setComments(updatedComments);
+      setCommentContent("");
+    } catch {
+      setCommentError("Failed to post comment. Please try again.");
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
   if(loading) {
     return <div className="p-8 text-center">Loading task....</div>
   }
@@ -510,12 +529,25 @@ const TaskDetails = () => {
                         <textarea
                           rows={3}
                           placeholder="Write a comment..."
+                          value={commentContent}
+                          onChange={(e) => setCommentContent(e.target.value)}
                           className="w-full resize-none rounded-xl border border-line bg-paper px-4 py-3 text-sm outline-none placeholder:text-muted focus:border-primary"
                         />
 
+                        {commentError && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {commentError}
+                          </p>
+                        )}
+
                         <div className="mt-2 flex justify-end">
-                          <Button variant="primary" className="px-4 py-2">
-                            Comment
+                          <Button 
+                            variant="primary" 
+                            className="px-4 py-2"
+                            onClick={handleAddComment}
+                            disabled={!commentContent.trim() || isSubmittingComment}
+                          >
+                            {isSubmittingComment ? "Posting..." : "Comment"}
                             <ArrowRightIcon />
                           </Button>
                         </div>
